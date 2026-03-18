@@ -572,6 +572,10 @@ electron/
   tsconfig.json    — TypeScript config for Electron code (compiles to dist-electron/)
 ```
 
+### App category
+
+The macOS app is categorized as **Social Networking** (`public.app-category.social-networking`) via `appCategoryType` in `forge.config.ts`. The same category is set for iOS via `infoPlist` in `app.json`. For Android, the Play Store category is configured in Google Play Console (not in the app manifest).
+
 ### CORS handling
 
 The Electron main process sets `webSecurity: false` on the `BrowserWindow`. This disables CORS enforcement, allowing the renderer to make direct API requests to any Nextcloud server. This is necessary because Nextcloud does not send `Access-Control-Allow-Origin` headers, and is safe because this is a trusted desktop app (not a public website). The `npm run web` browser mode will also hit CORS issues unless you configure a proxy or browser extension.

@@ -90,4 +90,6 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - Electron packaging uses an `ignore` regex to only bundle `dist-electron/`, `dist/`, `assets/`, and `package.json` into the ASAR (excludes `node_modules`, `src/`, native dirs) and a `packageAfterCopy` hook to rewrite `package.json` `main` from `index.ts` to `dist-electron/main.js`
 - Electron tray: closing the window hides to tray; Cmd+Q / menu Quit actually quits (controlled by `isQuitting` flag set on `before-quit` event)
 - macOS icon: `assets/icon.icns` generated from `icon.png`; Electron packager copies it as `electron.icns` into the app bundle. After installing a new build, run `lsregister -kill` + `killall Dock` if the Dock shows a stale cached icon
+- App category: `public.app-category.social-networking` — set via `appCategoryType` in Forge packagerConfig (macOS) and `infoPlist.LSApplicationCategoryType` in app.json (iOS). Android Play Store category is set in Play Console, not in app config
+- React Navigation theme is bridged from the Paper/Material theme in `App.tsx` (`ThemedNavigation` component) — maps Paper colors to navigation `background`, `card`, `text`, etc. so native stack transitions use correct dark/light backgrounds
 - Desktop uses Material Design 3 (react-native-paper); iOS Liquid Glass/blur effects are mobile-only

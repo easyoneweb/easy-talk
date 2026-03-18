@@ -10,6 +10,7 @@ const config: ForgeConfig = {
     name: 'Easy Talk',
     executableName: 'easy-talk',
     asar: true,
+    appCategoryType: 'public.app-category.social-networking',
     icon: path.resolve(process.cwd(), 'assets', 'icon'),
     ignore: [
       // Ignore everything by default, then allow only what Electron needs

@@ -1,9 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { ThemeProvider } from '@/theme/ThemeProvider';
+import { ThemeProvider, useAppTheme } from '@/theme/ThemeProvider';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { loadWebIcons } from '@/utils/loadWebIcons';
@@ -40,11 +44,35 @@ function AppContent() {
       themePreference={themePreference}
       setThemePreference={setThemePreference}
     >
-      <NavigationContainer>
-        <RootNavigator />
-        <StatusBar style="auto" />
-      </NavigationContainer>
+      <ThemedNavigation />
     </ThemeProvider>
+  );
+}
+
+function ThemedNavigation() {
+  const { theme, isDark } = useAppTheme();
+
+  const navigationTheme = useMemo(
+    () => ({
+      ...(isDark ? DarkTheme : DefaultTheme),
+      colors: {
+        ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+        background: theme.colors.background,
+        card: theme.colors.surface,
+        text: theme.colors.onSurface,
+        border: theme.colors.outlineVariant,
+        primary: theme.colors.primary,
+        notification: theme.colors.error,
+      },
+    }),
+    [isDark, theme],
+  );
+
+  return (
+    <NavigationContainer theme={navigationTheme}>
+      <RootNavigator />
+      <StatusBar style="auto" />
+    </NavigationContainer>
   );
 }
 

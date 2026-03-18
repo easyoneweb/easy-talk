@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ru.easyoneweb.easytalk"
+      "bundleIdentifier": "ru.easyoneweb.easytalk",
+      "infoPlist": {
+        "LSApplicationCategoryType": "public.app-category.social-networking"
+      }
     },
     "android": {
       "package": "ru.easyoneweb.easytalk",
