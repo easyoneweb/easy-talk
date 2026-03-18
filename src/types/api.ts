@@ -75,6 +75,11 @@ export interface MessageParameter {
   type: string;
   id: string;
   name: string;
+  mimetype?: string;
+  link?: string;
+  size?: number;
+  path?: string;
+  'preview-available'?: string;
   [key: string]: unknown;
 }
 

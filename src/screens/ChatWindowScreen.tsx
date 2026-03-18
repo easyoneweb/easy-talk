@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { StyleSheet, KeyboardAvoidingView, Platform, View } from 'react-native';
+import {
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  View,
+  Keyboard,
+} from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -35,6 +41,21 @@ export function ChatWindowScreen({ route, navigation }: Props) {
   const [conversationType, setConversationType] = useState<ConversationType>(
     ConversationType.ONE_TO_ONE,
   );
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const {
     data,
@@ -125,12 +146,18 @@ export function ChatWindowScreen({ route, navigation }: Props) {
           />
         </View>
       ) : (
-        <MessageInput
-          onSend={handleSend}
-          replyingTo={replyingTo}
-          onCancelReply={() => setReplyingTo(null)}
-          disabled={sendMessage.isPending}
-        />
+        <View
+          style={{
+            paddingBottom: Math.max(keyboardHeight - tabBarHeight + 24, 0),
+          }}
+        >
+          <MessageInput
+            onSend={handleSend}
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
+            disabled={sendMessage.isPending}
+          />
+        </View>
       )}
     </KeyboardAvoidingView>
   );

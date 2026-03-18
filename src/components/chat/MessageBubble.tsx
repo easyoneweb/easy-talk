@@ -1,10 +1,37 @@
-import React from 'react';
-import { StyleSheet, View, Pressable, Text as RNText } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import React, { useState, useCallback } from 'react';
+import {
+  StyleSheet,
+  View,
+  Pressable,
+  Text as RNText,
+  Dimensions,
+  Modal,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { Text, useTheme, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import type { Message } from '@/types/api';
+import type { Message, MessageParameter } from '@/types/api';
 import { MessageType } from '@/types/api';
+import { useAuthStore } from '@/stores/authStore';
 import { spacing, borderRadius } from '@/theme/spacing';
+
+const MEDIA_MAX_WIDTH = Dimensions.get('window').width * 0.65;
+const MEDIA_MAX_HEIGHT = 300;
+
+const IMAGE_MIMETYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/svg+xml',
+];
+const VIDEO_MIMETYPES = [
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/3gpp',
+];
 
 interface MessageBubbleProps {
   message: Message;
@@ -12,6 +39,197 @@ interface MessageBubbleProps {
   showSender: boolean;
   lastCommonRead?: number | null;
   onLongPress?: () => void;
+}
+
+function getFileParams(
+  message: Message,
+): { key: string; param: MessageParameter }[] {
+  if (!message.messageParameters) return [];
+  return Object.entries(message.messageParameters)
+    .filter(([, param]) => param.type === 'file')
+    .map(([key, param]) => ({ key, param }));
+}
+
+function isImageMimetype(mimetype: string): boolean {
+  return IMAGE_MIMETYPES.includes(mimetype);
+}
+
+function isVideoMimetype(mimetype: string): boolean {
+  return VIDEO_MIMETYPES.includes(mimetype);
+}
+
+function getFilePreviewUrl(
+  serverUrl: string,
+  fileId: string,
+  width = 400,
+  height = 400,
+): string {
+  return `${serverUrl}/index.php/core/preview?fileId=${fileId}&x=${width}&y=${height}&a=1`;
+}
+
+function getFileDownloadUrl(
+  serverUrl: string,
+  userId: string,
+  param: MessageParameter,
+): string {
+  // Use WebDAV path for raw file download
+  const filePath = param.path as string | undefined;
+  if (filePath) {
+    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    return `${serverUrl}/remote.php/dav/files/${userId}${encodeURI(normalizedPath)}`;
+  }
+  return `${serverUrl}/remote.php/dav/files/${userId}/${encodeURIComponent(param.name)}`;
+}
+
+function MediaAttachment({
+  param,
+  serverUrl,
+  userId,
+  credentials,
+}: {
+  param: MessageParameter;
+  serverUrl: string;
+  userId: string;
+  credentials: string;
+}) {
+  const theme = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [videoModalVisible, setVideoModalVisible] = useState(false);
+
+  const mimetype = (param.mimetype as string) ?? '';
+  const fileId = String(param.id);
+  const fileName = param.name ?? 'file';
+
+  const authHeaders = { Authorization: `Basic ${credentials}` };
+
+  const handleLoadEnd = useCallback(() => setLoading(false), []);
+  const handleError = useCallback(() => {
+    setLoading(false);
+    setError(true);
+  }, []);
+
+  if (isImageMimetype(mimetype)) {
+    // For GIFs, download the raw file via WebDAV so expo-image can animate it.
+    // The Nextcloud preview API always returns a static thumbnail.
+    const isGif = mimetype === 'image/gif';
+    const imageUrl = isGif
+      ? getFileDownloadUrl(serverUrl, userId, param)
+      : getFilePreviewUrl(serverUrl, fileId);
+
+    if (error) {
+      return (
+        <View style={styles.mediaFallback}>
+          <MaterialCommunityIcons
+            name="image-broken-variant"
+            size={32}
+            color={theme.colors.onSurfaceVariant}
+          />
+          <Text
+            variant="bodySmall"
+            style={{ color: theme.colors.onSurfaceVariant }}
+          >
+            {fileName}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.mediaContainer}>
+        {loading && (
+          <View style={styles.mediaLoader}>
+            <ActivityIndicator size="small" />
+          </View>
+        )}
+        <Image
+          source={{ uri: imageUrl, headers: authHeaders }}
+          style={styles.mediaImage}
+          contentFit="cover"
+          autoplay={true}
+          onLoad={handleLoadEnd}
+          onError={handleError}
+        />
+      </View>
+    );
+  }
+
+  if (isVideoMimetype(mimetype)) {
+    const previewUrl = getFilePreviewUrl(serverUrl, fileId);
+    const downloadUrl = getFileDownloadUrl(serverUrl, userId, param);
+
+    return (
+      <>
+        <Pressable
+          style={styles.mediaContainer}
+          onPress={() => setVideoModalVisible(true)}
+        >
+          {loading && (
+            <View style={styles.mediaLoader}>
+              <ActivityIndicator size="small" />
+            </View>
+          )}
+          <Image
+            source={{ uri: previewUrl, headers: authHeaders }}
+            style={styles.mediaImage}
+            contentFit="cover"
+            onLoad={handleLoadEnd}
+            onError={handleError}
+          />
+          <View style={styles.playOverlay}>
+            <MaterialCommunityIcons
+              name="play-circle"
+              size={48}
+              color="rgba(255,255,255,0.9)"
+            />
+          </View>
+        </Pressable>
+        <Modal
+          visible={videoModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setVideoModalVisible(false)}
+        >
+          <Pressable
+            style={styles.videoModalBackdrop}
+            onPress={() => setVideoModalVisible(false)}
+          >
+            <View style={styles.videoModalContent}>
+              <Image
+                source={{ uri: downloadUrl, headers: authHeaders }}
+                style={styles.videoModalImage}
+                contentFit="contain"
+              />
+              <Text
+                variant="bodySmall"
+                style={{ color: '#fff', marginTop: spacing.sm }}
+              >
+                {fileName}
+              </Text>
+            </View>
+          </Pressable>
+        </Modal>
+      </>
+    );
+  }
+
+  // Non-media file: show as download-like attachment
+  return (
+    <View style={styles.fileAttachment}>
+      <MaterialCommunityIcons
+        name="file-outline"
+        size={24}
+        color={theme.colors.primary}
+      />
+      <Text
+        variant="bodySmall"
+        numberOfLines={2}
+        style={{ color: theme.colors.onSurfaceVariant, flex: 1 }}
+      >
+        {fileName}
+      </Text>
+    </View>
+  );
 }
 
 export function MessageBubble({
@@ -22,6 +240,7 @@ export function MessageBubble({
   onLongPress,
 }: MessageBubbleProps) {
   const theme = useTheme();
+  const { serverUrl, userId, appPassword } = useAuthStore();
 
   if (message.messageType === MessageType.SYSTEM || message.systemMessage) {
     return (
@@ -43,6 +262,14 @@ export function MessageBubble({
     ? theme.colors.onPrimaryContainer
     : theme.colors.onSurfaceVariant;
 
+  const fileParams = getFileParams(message);
+  const hasFiles = fileParams.length > 0;
+  const messageText = parseMessageText(message);
+  // If message is only a file placeholder like "{file}", don't show text
+  const isFileOnlyMessage =
+    hasFiles && /^\s*\{[a-zA-Z0-9]+\}\s*$/.test(message.message.trim());
+  const credentials = btoa(`${userId}:${appPassword}`);
+
   return (
     <View
       style={[styles.wrapper, isOwn ? styles.wrapperOwn : styles.wrapperOther]}
@@ -53,6 +280,7 @@ export function MessageBubble({
           styles.bubble,
           isOwn ? styles.bubbleOwn : styles.bubbleOther,
           { backgroundColor: bubbleColor },
+          hasFiles && styles.bubbleWithMedia,
         ]}
       >
         {showSender && !isOwn && (
@@ -84,9 +312,22 @@ export function MessageBubble({
           </View>
         )}
 
-        <RNText style={[styles.messageText, { color: textColor }]}>
-          {parseMessageText(message)}
-        </RNText>
+        {hasFiles &&
+          fileParams.map(({ key, param }) => (
+            <MediaAttachment
+              key={key}
+              param={param}
+              serverUrl={serverUrl}
+              userId={userId}
+              credentials={credentials}
+            />
+          ))}
+
+        {!isFileOnlyMessage && (
+          <RNText style={[styles.messageText, { color: textColor }]}>
+            {messageText}
+          </RNText>
+        )}
 
         <View style={styles.timeRow}>
           <Text
@@ -202,5 +443,63 @@ const styles = StyleSheet.create({
   systemText: {
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  bubbleWithMedia: {
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.xs,
+  },
+  mediaContainer: {
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    maxWidth: MEDIA_MAX_WIDTH,
+    maxHeight: MEDIA_MAX_HEIGHT,
+    marginBottom: spacing.xs,
+  },
+  mediaImage: {
+    width: MEDIA_MAX_WIDTH,
+    height: MEDIA_MAX_HEIGHT * 0.75,
+    borderRadius: borderRadius.md,
+  },
+  mediaLoader: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  mediaFallback: {
+    width: MEDIA_MAX_WIDTH,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+    backgroundColor: 'rgba(128,128,128,0.1)',
+    marginBottom: spacing.xs,
+  },
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  videoModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoModalContent: {
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  videoModalImage: {
+    width: Dimensions.get('window').width * 0.9,
+    height: Dimensions.get('window').height * 0.6,
+  },
+  fileAttachment: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
 });

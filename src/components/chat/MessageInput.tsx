@@ -5,7 +5,7 @@ import {
   Platform,
   TextInput as RNTextInput,
 } from 'react-native';
-import { IconButton, TextInput, Text, useTheme } from 'react-native-paper';
+import { IconButton, Text, useTheme } from 'react-native-paper';
 import { useAppTheme } from '@/theme/ThemeProvider';
 import type { Message } from '@/types/api';
 import { spacing } from '@/theme/spacing';
@@ -172,29 +172,42 @@ export function MessageInput({
     );
   }
 
-  // Android: Material Design input
+  // Android: Material Design input with native TextInput for proper centering
   return (
     <View
       style={[
         styles.androidContainer,
-        { borderTopColor: theme.colors.outlineVariant },
+        {
+          borderTopColor: theme.colors.outlineVariant,
+          backgroundColor: theme.colors.surface,
+        },
       ]}
     >
       {replyBar}
       <View style={styles.inputRow}>
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Type a message..."
-          multiline
-          numberOfLines={MESSAGES.MAX_INPUT_LINES}
-          style={styles.input}
-          mode="outlined"
-          dense
-          disabled={disabled}
-          onSubmitEditing={handleSend}
-          blurOnSubmit={false}
-        />
+        <View
+          style={[
+            styles.androidInputWrapper,
+            {
+              borderColor: theme.colors.outline,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+        >
+          <RNTextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Type a message..."
+            placeholderTextColor={theme.colors.onSurfaceVariant}
+            multiline
+            numberOfLines={MESSAGES.MAX_INPUT_LINES}
+            style={[styles.androidInput, { color: theme.colors.onSurface }]}
+            editable={!disabled}
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
+            textAlignVertical="center"
+          />
+        </View>
         <IconButton
           icon="send"
           mode="contained"
@@ -259,10 +272,22 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: Platform.OS === 'ios' ? 'flex-end' : 'center',
   },
-  input: {
+  androidInputWrapper: {
     flex: 1,
+    borderWidth: 1,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  androidInput: {
+    fontSize: 16,
+    lineHeight: 20,
     maxHeight: 120,
+    padding: 0,
+    textAlignVertical: 'center',
   },
 });

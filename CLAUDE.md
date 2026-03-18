@@ -8,7 +8,7 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - **Language**: TypeScript (strict mode)
 - **Navigation**: React Navigation (bottom tabs on mobile, drawer sidebar on desktop, native stack)
 - **Desktop**: Electron + react-native-web (Expo web platform)
-- **UI**: react-native-paper v5 (MD3), @callstack/liquid-glass (iOS 26+), @react-native-community/blur (iOS fallback)
+- **UI**: react-native-paper v5 (MD3), @callstack/liquid-glass (iOS 26+), @react-native-community/blur (iOS fallback), expo-image (media rendering with animated GIF support)
 - **State**: zustand (client state), @tanstack/react-query (server state)
 - **HTTP**: axios with OCS header interceptors
 - **Storage**: expo-secure-store (credentials, mobile), expo-sqlite (offline cache, mobile), localStorage/Electron safeStorage (desktop), sql.js (offline cache, desktop)
@@ -42,6 +42,10 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - iOS floating tab bar: pill-shaped with LiquidGlassView, `marginHorizontal: 60`, `borderRadius: 28`, `overflow: 'hidden'`
 - iOS floating message input: LiquidGlassView glass pill (`borderRadius: 28`) absolutely positioned above the tab bar; MessageList gets extra `contentPaddingBottom` to avoid content behind overlays
 - iOS message text uses RN native `Text` (not react-native-paper) for proper emoji rendering
+- Android message input uses RN native `TextInput` (not react-native-paper) for proper vertical text centering
+- Media attachments in messages: images rendered via Nextcloud preview API (`/index.php/core/preview?fileId=`), GIFs loaded via WebDAV raw file URL (`/remote.php/dav/files/{userId}/{path}`) for animation support; videos show preview thumbnail with play overlay
+- Icon fonts loaded via `expo-font` (`useFonts` in App.tsx) for cross-platform support; iOS additionally uses `UIAppFonts` in app.json
+- Android keyboard handling: `Keyboard` event listeners in ChatWindowScreen track keyboard height and apply `paddingBottom` to push input above keyboard (iOS uses `KeyboardAvoidingView` with `behavior="padding"`)
 
 ## Commands
 - `npm start` - Start Metro dev server (dev client mode)

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -22,9 +23,17 @@ function AppContent() {
   const { themePreference, setThemePreference, loadSettings } =
     useSettingsStore();
 
+  const [fontsLoaded] = useFonts({
+    MaterialCommunityIcons: require('react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf'),
+  });
+
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <ThemeProvider

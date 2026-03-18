@@ -10,6 +10,7 @@ Easy Talk connects to your Nextcloud server and gives you a native chat experien
 - **Conversations** — View all your chats with unread counts, avatars, and search
 - **Messaging** — Send and receive messages in real time with long polling
 - **Replies** — Reply to specific messages with quoted previews
+- **Media** — Inline images, animated GIFs, and video previews in chat
 - **Contacts** — Search Nextcloud users and start new conversations
 - **Offline support** — Cached conversations and messages available without network
 - **Theming** — System, light, and dark themes; Android picks up your device's Material You colors
@@ -93,6 +94,7 @@ src/
 | Navigation | React Navigation |
 | UI (Android) | React Native Paper (Material Design 3) |
 | UI (iOS) | Liquid Glass / BlurView |
+| Media | expo-image (animated GIF support) |
 | State | Zustand + TanStack Query |
 | Storage | Expo Secure Store + SQLite |
 | Desktop | Electron + react-native-web |
