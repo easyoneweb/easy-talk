@@ -20,6 +20,7 @@ interface MessageListProps {
   hasMoreMessages: boolean;
   isLoadingMore: boolean;
   onMessageLongPress?: (message: Message) => void;
+  lastCommonRead?: number | null;
 }
 
 export function MessageList({
@@ -30,6 +31,7 @@ export function MessageList({
   hasMoreMessages,
   isLoadingMore,
   onMessageLongPress,
+  lastCommonRead,
 }: MessageListProps) {
   const theme = useTheme();
   const flatListRef = useRef<FlatList>(null);
@@ -96,11 +98,12 @@ export function MessageList({
           message={message}
           isOwn={isOwn}
           showSender={isGroupChat}
+          lastCommonRead={lastCommonRead}
           onLongPress={() => onMessageLongPress?.(message)}
         />
       );
     },
-    [currentUserId, isGroupChat, theme, onMessageLongPress],
+    [currentUserId, isGroupChat, theme, onMessageLongPress, lastCommonRead],
   );
 
   return (

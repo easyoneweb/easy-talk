@@ -67,7 +67,11 @@ export function LoginScreen() {
 
     try {
       const loginFlow = await initiateLoginFlow(normalized);
-      await WebBrowser.openBrowserAsync(loginFlow.login);
+      if (Platform.OS === 'web') {
+        window.open(loginFlow.login, '_blank');
+      } else {
+        await WebBrowser.openBrowserAsync(loginFlow.login);
+      }
 
       const startTime = Date.now();
       while (
@@ -115,7 +119,7 @@ export function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={[styles.root, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView

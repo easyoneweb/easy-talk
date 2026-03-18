@@ -16,7 +16,11 @@ All builds are done locally on your machine. No Expo EAS or cloud build services
 8. [iOS — Debug Build](#ios--debug-build)
 9. [iOS — Release Archive (App Store / TestFlight)](#ios--release-archive-app-store--testflight)
 10. [iOS — Code Signing](#ios--code-signing)
-11. [Troubleshooting](#troubleshooting)
+11. [Desktop — Web Dev Server](#desktop--web-dev-server)
+12. [Desktop — Electron Dev Mode](#desktop--electron-dev-mode)
+13. [Desktop — Building Installers](#desktop--building-installers)
+14. [Desktop — Platform-Specific Notes](#desktop--platform-specific-notes)
+15. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -446,6 +450,144 @@ Or use **Transporter** app from Mac App Store for a GUI-based upload.
 
 ---
 
+## Desktop — Web Dev Server
+
+The app can run in a browser using Expo's web platform (react-native-web). This is useful for quick testing without Electron.
+
+```bash
+npm run web
+```
+
+This starts Metro bundler serving the web version at `http://localhost:8081`. The app renders using react-native-web with a desktop-optimized layout (sidebar navigation, split-view chat).
+
+---
+
+## Desktop — Electron Dev Mode
+
+For a full desktop experience with native window chrome, system tray, and encrypted credential storage:
+
+```bash
+npm run electron:dev
+```
+
+This runs two processes concurrently:
+1. Expo web dev server on port 8081
+2. Electron loading from `http://localhost:8081` (waits for Metro to be ready)
+
+Hot reload works — changes to React components update live in the Electron window.
+
+### First-time setup
+
+No additional setup is needed beyond `npm install`. Electron and all Forge makers are included as devDependencies.
+
+---
+
+## Desktop — Building Installers
+
+### Package without installers (for testing)
+
+```bash
+npm run electron:package
+```
+
+This creates a packaged app in `out/` without creating platform-specific installers. Useful for quick local testing.
+
+### Build distributable installers
+
+```bash
+npm run electron:build
+```
+
+This:
+1. Exports the Expo web bundle to `dist/`
+2. Compiles Electron TypeScript to `dist-electron/`
+3. Runs Electron Forge to create platform-specific installers
+
+### What each platform produces
+
+| Platform | Maker | Output |
+|----------|-------|--------|
+| **Windows** | Squirrel.Windows | `.exe` installer with auto-update support |
+| **macOS** | DMG | `.dmg` disk image |
+| **Linux** | DEB + RPM | `.deb` (Debian/Ubuntu) and `.rpm` (Fedora/RHEL) packages |
+
+Output location: `out/make/`
+
+### Cross-platform builds
+
+Electron Forge builds for the **current platform only**. To build for all platforms:
+- Build Windows installers on a Windows machine (or Windows CI runner)
+- Build macOS DMG on macOS
+- Build Linux packages on Linux (or Linux CI runner)
+
+For CI, use a GitHub Actions matrix:
+```yaml
+strategy:
+  matrix:
+    os: [windows-latest, macos-latest, ubuntu-latest]
+```
+
+---
+
+## Desktop — Platform-Specific Notes
+
+### Architecture
+
+Desktop support uses **Expo Web + Electron**:
+- React components render via `react-native-web` in Electron's Chromium renderer
+- Electron main process handles: window management, system tray, native menus, encrypted credential storage (via `safeStorage`), and OS notifications
+- Communication between renderer and main process uses IPC via a preload script (`electron/preload.ts`)
+
+### Service abstractions
+
+Native mobile APIs are replaced with web equivalents via Metro's `.web.ts` file extension resolution:
+
+| Service | Mobile | Desktop (web) |
+|---------|--------|---------------|
+| **Secure storage** | `expo-secure-store` | `localStorage` (browser) / Electron `safeStorage` (desktop app) |
+| **Database** | `expo-sqlite` | `sql.js` (SQLite compiled to WASM) with IndexedDB persistence |
+| **Notifications** | `expo-notifications` | Web Notifications API / Electron native notifications |
+| **Long polling** | `AppState` | `document.visibilityState` (handled by react-native-web) |
+| **OAuth browser** | `expo-web-browser` | `window.open()` |
+
+### Desktop UI differences
+
+- **Navigation**: Permanent sidebar (drawer) instead of bottom tabs; no hamburger toggle (hidden via `headerLeft: () => null`)
+- **Chat**: Split-view with conversation list on the left and chat on the right (empty state when no conversation selected)
+- **Visual effects**: No Liquid Glass or blur — uses Material Design 3 Surface cards
+- **Icons**: MaterialCommunityIcons font loaded via CSS `@font-face` injection (`src/utils/loadWebIcons.ts`)
+- **Platform components**: `.web.tsx` variants in `src/components/platform/` avoid bundling iOS-only native modules
+- **Contacts**: Load immediately on mount (empty-query returns known users), same as mobile
+
+### Electron project structure
+
+```
+electron/
+  main.ts          — Main process (window, IPC handlers, tray, menus)
+  preload.ts       — contextBridge exposing electronAPI to renderer
+  forge.config.ts  — Electron Forge packaging configuration
+  tsconfig.json    — TypeScript config for Electron code
+```
+
+### CORS handling
+
+The Electron main process sets `webSecurity: false` on the `BrowserWindow`. This disables CORS enforcement, allowing the renderer to make direct API requests to any Nextcloud server. This is necessary because Nextcloud does not send `Access-Control-Allow-Origin` headers, and is safe because this is a trusted desktop app (not a public website). The `npm run web` browser mode will also hit CORS issues unless you configure a proxy or browser extension.
+
+### Dark mode
+
+Electron is configured with `nativeTheme.themeSource = 'system'`, so `prefers-color-scheme` CSS media queries (used by react-native-web's `useColorScheme`) correctly reflect the OS dark mode setting.
+
+### Security
+
+The Electron setup follows security best practices:
+- `contextIsolation: true` — renderer cannot access Node.js APIs directly
+- `nodeIntegration: false` — no `require()` in renderer
+- All main process communication via `contextBridge` and `ipcRenderer.invoke()`
+- Credentials encrypted with Electron's `safeStorage` (OS-level encryption)
+- `webSecurity: false` is required for CORS bypass (see above) — this is acceptable for a desktop app but means the renderer can load cross-origin resources
+
+---
+
 ## Troubleshooting
 
 ### General
@@ -529,6 +671,54 @@ arch -x86_64 pod install
 cd ..
 ```
 
+### Desktop / Electron
+
+**`npm run web` shows blank page or errors**
+```bash
+# Ensure web dependencies and babel preset are installed
+npx expo install react-dom react-native-web @expo/metro-runtime
+npm install babel-preset-expo
+
+# Clear Metro cache and restart
+npx expo start --web --clear
+```
+
+**CORS errors in browser (not Electron)**
+- Running via `npm run web` in a regular browser will hit CORS errors when connecting to Nextcloud
+- This is expected — use `npm run electron:dev` for full desktop testing (Electron bypasses CORS)
+- For browser-only testing, configure a CORS proxy or use a browser extension
+
+**`npm run electron:dev` — Electron window is blank**
+- Metro may not be ready yet. The `wait-on` utility should handle this, but if it times out, start Metro separately:
+```bash
+# Terminal 1
+npm run web
+
+# Terminal 2 (after Metro is ready)
+tsc -p electron/tsconfig.json && electron dist-electron/main.js --dev
+```
+
+**`npm run electron:build` fails with "cannot find module"**
+```bash
+# Ensure Electron TypeScript is compiled
+npx tsc -p electron/tsconfig.json
+
+# Verify dist-electron/ contains main.js and preload.js
+ls dist-electron/
+```
+
+**Native module errors on web (e.g., `@callstack/liquid-glass`)**
+- Platform components should have `.web.tsx` variants that avoid importing native modules
+- If a new native module is added, create a `.web.tsx` variant in `src/components/platform/`
+
+**sql.js WASM file not found**
+- `sql.js` needs its WASM binary. By default it fetches from CDN. If offline, copy `node_modules/sql.js/dist/sql-wasm.wasm` to your `public/` or `dist/` directory
+
+**Electron `safeStorage` not available**
+- `safeStorage` requires a running desktop environment with a keychain/keyring
+- On headless Linux, install `gnome-keyring` or `kwallet`
+- Falls back to `localStorage` when `electronAPI` is not present (browser-only mode)
+
 ---
 
 ## Quick Reference — All Commands
@@ -544,8 +734,13 @@ cd ..
 | Build release APK | `npm run prebuild && npm run build:apk` |
 | Build release AAB | `npm run prebuild && npm run build:aab` |
 | Build iOS archive | `npm run prebuild && npm run build:ios` |
+| Run web in browser | `npm run web` |
+| Build web bundle | `npm run build:web` |
+| Run Electron (dev) | `npm run electron:dev` |
+| Build desktop installers | `npm run electron:build` |
+| Package desktop app | `npm run electron:package` |
 | Start dev server manually | `npm start` |
-| Clean all native builds | `npm run clean` |
+| Clean all build artifacts | `npm run clean` |
 
 ---
 
@@ -558,3 +753,7 @@ cd ..
 | Android release AAB | `android/app/build/outputs/bundle/release/app-release.aab` |
 | iOS archive | `ios/build/EasyTalk.xcarchive` |
 | iOS exported IPA | `ios/build/export/EasyTalk.ipa` |
+| Web bundle | `dist/` |
+| Electron compiled TS | `dist-electron/` |
+| Desktop packaged app | `out/` |
+| Desktop installers | `out/make/` |

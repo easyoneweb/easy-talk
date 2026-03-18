@@ -25,6 +25,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       }
     },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
     "plugins": [
       "expo-secure-store",
       "expo-sqlite",

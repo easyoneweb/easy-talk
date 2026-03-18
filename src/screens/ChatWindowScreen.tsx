@@ -32,8 +32,14 @@ export function ChatWindowScreen({ route, navigation }: Props) {
     ConversationType.ONE_TO_ONE,
   );
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useMessages(token);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    lastCommonRead,
+    updateLastCommonRead,
+  } = useMessages(token);
 
   const sendMessage = useSendMessage(token);
   const markAsRead = useMarkAsRead(token);
@@ -45,7 +51,7 @@ export function ChatWindowScreen({ route, navigation }: Props) {
       ? Math.max(...allMessages.map((m) => m.id))
       : undefined;
 
-  useLongPolling(token, lastKnownMessageId);
+  useLongPolling(token, lastKnownMessageId, updateLastCommonRead);
 
   useEffect(() => {
     navigation.setOptions({ title: displayName });
@@ -96,6 +102,7 @@ export function ChatWindowScreen({ route, navigation }: Props) {
         hasMoreMessages={!!hasNextPage}
         isLoadingMore={isFetchingNextPage}
         onMessageLongPress={handleMessageLongPress}
+        lastCommonRead={lastCommonRead}
       />
       <MessageInput
         onSend={handleSend}

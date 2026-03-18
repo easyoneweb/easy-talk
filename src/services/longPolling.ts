@@ -4,7 +4,10 @@ import type { Message } from '@/types/api';
 import { POLLING } from '@/config/constants';
 
 type ConnectionState = 'connected' | 'reconnecting' | 'disconnected';
-type MessageCallback = (messages: Message[]) => void;
+type MessageCallback = (
+  messages: Message[],
+  lastCommonRead: number | null,
+) => void;
 
 export class LongPollingManager {
   private token: string;
@@ -70,7 +73,7 @@ export class LongPollingManager {
       try {
         this.onStateChange?.('connected');
 
-        const messages = await pollNewMessages(
+        const result = await pollNewMessages(
           this.token,
           this.lastKnownMessageId,
           this.abortController.signal,
@@ -78,10 +81,13 @@ export class LongPollingManager {
 
         if (!this.isRunning) break;
 
-        if (messages.length > 0) {
-          const maxId = Math.max(...messages.map((m) => m.id));
+        if (result.messages.length > 0) {
+          const maxId = Math.max(...result.messages.map((m) => m.id));
           this.lastKnownMessageId = maxId;
-          this.onMessages(messages);
+          this.onMessages(result.messages, result.lastCommonRead);
+        } else if (result.lastCommonRead !== null) {
+          // Read status update even without new messages
+          this.onMessages([], result.lastCommonRead);
         }
       } catch (error: unknown) {
         if (!this.isRunning) break;

@@ -6,6 +6,14 @@ export default defineConfig([
   expoConfig,
   prettierPlugin,
   {
-    ignores: ['android/', 'ios/', 'dist/', 'node_modules/', '.expo/'],
+    ignores: [
+      'android/',
+      'ios/',
+      'dist/',
+      'dist-electron/',
+      'out/',
+      'node_modules/',
+      '.expo/',
+    ],
   },
 ]);

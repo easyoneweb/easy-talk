@@ -10,6 +10,11 @@ interface GetMessagesParams {
   setReadMarker?: 0 | 1;
 }
 
+export interface MessagesResponse {
+  messages: Message[];
+  lastCommonRead: number | null;
+}
+
 export async function getMessages(
   token: string,
   params: GetMessagesParams = {},
@@ -27,6 +32,29 @@ export async function getMessages(
     },
   );
   return response.data;
+}
+
+export async function getMessagesWithReadStatus(
+  token: string,
+  params: GetMessagesParams = {},
+): Promise<MessagesResponse> {
+  const response = await getApiClient().get<Message[]>(
+    `${API_PATHS.CHAT}/${token}`,
+    {
+      params: {
+        lookIntoFuture: params.lookIntoFuture ?? 0,
+        limit: params.limit ?? MESSAGES.PAGE_SIZE,
+        lastKnownMessageId: params.lastKnownMessageId,
+        timeout: params.timeout,
+        setReadMarker: params.setReadMarker ?? 1,
+      },
+    },
+  );
+  const lastCommonRead = response.headers?.['x-chat-last-common-read'];
+  return {
+    messages: response.data,
+    lastCommonRead: lastCommonRead ? parseInt(lastCommonRead, 10) : null,
+  };
 }
 
 export async function sendMessage(
@@ -50,7 +78,7 @@ export async function pollNewMessages(
   token: string,
   lastKnownMessageId: number,
   signal?: AbortSignal,
-): Promise<Message[]> {
+): Promise<MessagesResponse> {
   const response = await getApiClient().get<Message[]>(
     `${API_PATHS.CHAT}/${token}`,
     {
@@ -64,7 +92,11 @@ export async function pollNewMessages(
       signal,
     },
   );
-  return response.data;
+  const lastCommonRead = response.headers?.['x-chat-last-common-read'];
+  return {
+    messages: response.data,
+    lastCommonRead: lastCommonRead ? parseInt(lastCommonRead, 10) : null,
+  };
 }
 
 export async function markAsRead(

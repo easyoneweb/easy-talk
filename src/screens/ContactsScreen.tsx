@@ -48,12 +48,6 @@ export function ContactsScreen() {
 
       {isLoading || isSearching ? (
         <ActivityIndicator style={styles.loading} />
-      ) : searchQuery.length < 2 ? (
-        <EmptyState
-          icon="account-search"
-          title="Search for users"
-          description="Type at least 2 characters to search"
-        />
       ) : contacts.length === 0 ? (
         <EmptyState
           icon="account-off"

@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { loadWebIcons } from '@/utils/loadWebIcons';
+
+loadWebIcons();
 
 const queryClient = new QueryClient({
   defaultOptions: {

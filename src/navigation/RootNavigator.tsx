@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import { LoginScreen } from '@/screens/LoginScreen';
-import { MainTabs } from './MainTabs';
+import { MainLayout } from './MainLayout';
 import { useAuth } from '@/hooks/useAuth';
 import type { RootStackParamList } from '@/types/navigation';
 
@@ -26,7 +26,7 @@ export function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
-        <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen name="Main" component={MainLayout} />
       ) : (
         <Stack.Screen name="Login" component={LoginScreen} />
       )}

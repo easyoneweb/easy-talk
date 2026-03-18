@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { Message } from '@/types/api';
 import { MessageType } from '@/types/api';
 import { spacing, borderRadius } from '@/theme/spacing';
@@ -9,6 +10,7 @@ interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   showSender: boolean;
+  lastCommonRead?: number | null;
   onLongPress?: () => void;
 }
 
@@ -16,6 +18,7 @@ export function MessageBubble({
   message,
   isOwn,
   showSender,
+  lastCommonRead,
   onLongPress,
 }: MessageBubbleProps) {
   const theme = useTheme();
@@ -85,20 +88,40 @@ export function MessageBubble({
           {parseMessageText(message)}
         </Text>
 
-        <Text
-          variant="labelSmall"
-          style={[
-            styles.time,
-            {
-              color: isOwn
-                ? theme.colors.onPrimaryContainer
-                : theme.colors.onSurfaceVariant,
-              opacity: 0.7,
-            },
-          ]}
-        >
-          {formatMessageTime(message.timestamp)}
-        </Text>
+        <View style={styles.timeRow}>
+          <Text
+            variant="labelSmall"
+            style={[
+              styles.time,
+              {
+                color: isOwn
+                  ? theme.colors.onPrimaryContainer
+                  : theme.colors.onSurfaceVariant,
+                opacity: 0.7,
+              },
+            ]}
+          >
+            {formatMessageTime(message.timestamp)}
+          </Text>
+          {isOwn && (
+            <MaterialCommunityIcons
+              name={
+                lastCommonRead != null && message.id <= lastCommonRead
+                  ? 'check-all'
+                  : 'check'
+              }
+              size={14}
+              color={
+                lastCommonRead != null && message.id <= lastCommonRead
+                  ? theme.colors.primary
+                  : isOwn
+                    ? theme.colors.onPrimaryContainer
+                    : theme.colors.onSurfaceVariant
+              }
+              style={styles.checkIcon}
+            />
+          )}
+        </View>
       </Pressable>
     </View>
   );
@@ -156,9 +179,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     paddingVertical: spacing.xs / 2,
   },
-  time: {
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-end',
     marginTop: spacing.xs,
+    gap: 3,
+  },
+  time: {},
+  checkIcon: {
+    opacity: 0.7,
   },
   systemContainer: {
     alignItems: 'center',
