@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable, Text as RNText } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { Message } from '@/types/api';
@@ -84,9 +84,9 @@ export function MessageBubble({
           </View>
         )}
 
-        <Text variant="bodyMedium" style={{ color: textColor }}>
+        <RNText style={[styles.messageText, { color: textColor }]}>
           {parseMessageText(message)}
-        </Text>
+        </RNText>
 
         <View style={styles.timeRow}>
           <Text
@@ -185,6 +185,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginTop: spacing.xs,
     gap: 3,
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
   },
   time: {},
   checkIcon: {

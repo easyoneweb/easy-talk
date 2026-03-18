@@ -1,8 +1,8 @@
 # Easy Talk
 
-A mobile messenger for [Nextcloud Talk](https://nextcloud.com/talk/) — built with React Native for iOS and Android.
+A cross-platform messenger for [Nextcloud Talk](https://nextcloud.com/talk/) — built with React Native for iOS, Android, and desktop (Windows, Linux, macOS via Electron).
 
-Easy Talk connects to your Nextcloud server and gives you a native chat experience on both platforms: **Liquid Glass** on iOS 26+ and **Material Design 3** with dynamic colors on Android.
+Easy Talk connects to your Nextcloud server and gives you a native chat experience: **Liquid Glass** on iOS 26+, **Material Design 3** with dynamic colors on Android, and a desktop app with sidebar navigation and split-view chat.
 
 ## Features
 
@@ -56,6 +56,9 @@ npm run build:aab
 
 # iOS archive (App Store / TestFlight)
 npm run build:ios
+
+# Desktop installers (Windows/macOS/Linux)
+npm run electron:build
 ```
 
 All builds run locally — no cloud build services required. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for signing setup and detailed instructions.
@@ -92,6 +95,7 @@ src/
 | UI (iOS) | Liquid Glass / BlurView |
 | State | Zustand + TanStack Query |
 | Storage | Expo Secure Store + SQLite |
+| Desktop | Electron + react-native-web |
 | Linting | ESLint (eslint-config-expo) + Prettier |
 
 ## Development

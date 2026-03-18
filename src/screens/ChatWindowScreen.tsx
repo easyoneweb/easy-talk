@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useTheme } from 'react-native-paper';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MessageList } from '@/components/chat/MessageList';
 import { MessageInput } from '@/components/chat/MessageInput';
@@ -26,6 +27,9 @@ export function ChatWindowScreen({ route, navigation }: Props) {
   const { token, displayName } = route.params;
   const theme = useTheme();
   const userId = useAuthStore((s) => s.userId);
+  const rawTabBarHeight = useBottomTabBarHeight();
+  // Fallback to standard tab bar height if hook returns 0
+  const tabBarHeight = rawTabBarHeight > 0 ? rawTabBarHeight : 70;
 
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [conversationType, setConversationType] = useState<ConversationType>(
@@ -88,6 +92,12 @@ export function ChatWindowScreen({ route, navigation }: Props) {
     }
   }, []);
 
+  // On iOS, the message input floats above the tab bar (both absolutely positioned)
+  // The message list gets extra bottom padding to avoid content being hidden behind them
+  const inputHeight = 68; // glass pill height including padding
+  const bottomInset =
+    Platform.OS === 'ios' ? tabBarHeight + inputHeight + 16 : 0;
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -103,13 +113,25 @@ export function ChatWindowScreen({ route, navigation }: Props) {
         isLoadingMore={isFetchingNextPage}
         onMessageLongPress={handleMessageLongPress}
         lastCommonRead={lastCommonRead}
+        contentPaddingBottom={bottomInset}
       />
-      <MessageInput
-        onSend={handleSend}
-        replyingTo={replyingTo}
-        onCancelReply={() => setReplyingTo(null)}
-        disabled={sendMessage.isPending}
-      />
+      {Platform.OS === 'ios' ? (
+        <View style={[styles.iosInputOverlay, { bottom: tabBarHeight + 16 }]}>
+          <MessageInput
+            onSend={handleSend}
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
+            disabled={sendMessage.isPending}
+          />
+        </View>
+      ) : (
+        <MessageInput
+          onSend={handleSend}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo(null)}
+          disabled={sendMessage.isPending}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -117,5 +139,10 @@ export function ChatWindowScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  iosInputOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
   },
 });

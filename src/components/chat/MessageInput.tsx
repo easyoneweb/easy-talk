@@ -1,9 +1,38 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Platform,
+  TextInput as RNTextInput,
+} from 'react-native';
 import { IconButton, TextInput, Text, useTheme } from 'react-native-paper';
+import { useAppTheme } from '@/theme/ThemeProvider';
 import type { Message } from '@/types/api';
 import { spacing } from '@/theme/spacing';
 import { MESSAGES } from '@/config/constants';
+
+let LiquidGlassView: React.ComponentType<any> | null = null;
+let isLiquidGlassSupported = false;
+let BlurView: React.ComponentType<any> | null = null;
+
+if (Platform.OS === 'ios') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const liquidGlass = require('@callstack/liquid-glass');
+    LiquidGlassView = liquidGlass.LiquidGlassView;
+    isLiquidGlassSupported = liquidGlass.isLiquidGlassSupported ?? false;
+  } catch {
+    // Liquid Glass not available
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const blur = require('@react-native-community/blur');
+    BlurView = blur.BlurView;
+  } catch {
+    // Blur not available
+  }
+}
 
 interface MessageInputProps {
   onSend: (message: string, replyTo?: number) => void;
@@ -19,6 +48,7 @@ export function MessageInput({
   disabled,
 }: MessageInputProps) {
   const theme = useTheme();
+  const { isDark } = useAppTheme();
   const [text, setText] = useState('');
 
   const handleSend = () => {
@@ -29,39 +59,128 @@ export function MessageInput({
     onCancelReply();
   };
 
-  return (
+  const replyBar = replyingTo ? (
     <View
       style={[
-        styles.container,
-        { borderTopColor: theme.colors.outlineVariant },
+        styles.replyBar,
+        {
+          backgroundColor:
+            Platform.OS === 'ios'
+              ? 'rgba(118, 118, 128, 0.12)'
+              : theme.colors.surfaceVariant,
+          borderLeftColor: theme.colors.primary,
+        },
       ]}
     >
-      {replyingTo && (
+      <View style={styles.replyContent}>
+        <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
+          {replyingTo.actorDisplayName}
+        </Text>
+        <Text
+          variant="bodySmall"
+          numberOfLines={1}
+          style={{ color: theme.colors.onSurfaceVariant }}
+        >
+          {replyingTo.message}
+        </Text>
+      </View>
+      <IconButton icon="close" size={16} onPress={onCancelReply} />
+    </View>
+  ) : null;
+
+  // iOS: native TextInput with iMessage-style rounded field + glass/blur background
+  if (Platform.OS === 'ios') {
+    const iosInputContent = (
+      <>
+        {replyBar}
+        <View style={styles.inputRow}>
+          <View style={styles.iosInputWrapper}>
+            <RNTextInput
+              value={text}
+              onChangeText={setText}
+              placeholder="Type a message..."
+              placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
+              multiline
+              numberOfLines={MESSAGES.MAX_INPUT_LINES}
+              style={[
+                styles.iosInput,
+                { color: isDark ? '#FFFFFF' : '#000000' },
+              ]}
+              editable={!disabled}
+              onSubmitEditing={handleSend}
+              blurOnSubmit={false}
+            />
+          </View>
+          <IconButton
+            icon="arrow-up-circle"
+            mode="contained"
+            onPress={handleSend}
+            disabled={!text.trim() || disabled}
+            iconColor="#FFFFFF"
+            containerColor={theme.colors.primary}
+            size={22}
+            style={styles.iosSendButton}
+          />
+        </View>
+      </>
+    );
+
+    // Wrap in LiquidGlassView for glass pill background (like tab bar)
+    if (isLiquidGlassSupported && LiquidGlassView) {
+      return (
+        <View style={styles.iosContainer}>
+          <LiquidGlassView style={styles.iosGlassPill}>
+            {iosInputContent}
+          </LiquidGlassView>
+        </View>
+      );
+    }
+
+    // BlurView fallback
+    if (BlurView) {
+      return (
+        <View style={styles.iosContainer}>
+          <View style={styles.iosGlassPill}>
+            <BlurView
+              style={StyleSheet.absoluteFill}
+              blurType={isDark ? 'chromeMaterialDark' : 'chromeMaterialLight'}
+              blurAmount={30}
+              reducedTransparencyFallbackColor={isDark ? '#1c1c1e' : '#f9f9f9'}
+            />
+            {iosInputContent}
+          </View>
+        </View>
+      );
+    }
+
+    // Opaque fallback
+    return (
+      <View style={styles.iosContainer}>
         <View
           style={[
-            styles.replyBar,
+            styles.iosGlassPill,
             {
-              backgroundColor: theme.colors.surfaceVariant,
-              borderLeftColor: theme.colors.primary,
+              backgroundColor: isDark
+                ? 'rgba(28, 28, 30, 0.9)'
+                : 'rgba(249, 249, 249, 0.9)',
             },
           ]}
         >
-          <View style={styles.replyContent}>
-            <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
-              {replyingTo.actorDisplayName}
-            </Text>
-            <Text
-              variant="bodySmall"
-              numberOfLines={1}
-              style={{ color: theme.colors.onSurfaceVariant }}
-            >
-              {replyingTo.message}
-            </Text>
-          </View>
-          <IconButton icon="close" size={16} onPress={onCancelReply} />
+          {iosInputContent}
         </View>
-      )}
+      </View>
+    );
+  }
 
+  // Android: Material Design input
+  return (
+    <View
+      style={[
+        styles.androidContainer,
+        { borderTopColor: theme.colors.outlineVariant },
+      ]}
+    >
+      {replyBar}
       <View style={styles.inputRow}>
         <TextInput
           value={text}
@@ -70,7 +189,7 @@ export function MessageInput({
           multiline
           numberOfLines={MESSAGES.MAX_INPUT_LINES}
           style={styles.input}
-          mode={Platform.OS === 'android' ? 'outlined' : 'flat'}
+          mode="outlined"
           dense
           disabled={disabled}
           onSubmitEditing={handleSend}
@@ -91,7 +210,36 @@ export function MessageInput({
 }
 
 const styles = StyleSheet.create({
-  container: {
+  iosContainer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  iosGlassPill: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
+  },
+  iosInputWrapper: {
+    flex: 1,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 0,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  iosInput: {
+    fontSize: 16,
+    lineHeight: 20,
+    maxHeight: 120,
+    padding: 0,
+  },
+  iosSendButton: {
+    margin: 0,
+    marginLeft: 4,
+  },
+  androidContainer: {
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
@@ -101,7 +249,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderLeftWidth: 3,
     marginHorizontal: spacing.sm,
-    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
     paddingLeft: spacing.sm,
     borderRadius: 4,
   },

@@ -14,7 +14,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ru.easyoneweb.easytalk"
+      "bundleIdentifier": "ru.easyoneweb.easytalk",
+      "infoPlist": {
+        "UIAppFonts": [
+          "MaterialCommunityIcons.ttf"
+        ]
+      }
     },
     "android": {
       "package": "ru.easyoneweb.easytalk",

@@ -70,6 +70,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     title: 'Easy Talk',
+    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -101,7 +102,10 @@ function createWindow(): void {
 }
 
 function createTray(): void {
-  const icon = nativeImage.createEmpty();
+  const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
+  const icon = nativeImage
+    .createFromPath(iconPath)
+    .resize({ width: 16, height: 16 });
   tray = new Tray(icon);
   tray.setToolTip('Easy Talk');
 

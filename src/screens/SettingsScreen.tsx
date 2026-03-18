@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, ScrollView, View } from 'react-native';
+import { Platform, StyleSheet, ScrollView, View } from 'react-native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import {
   List,
   Switch,
@@ -16,6 +17,7 @@ import { spacing } from '@/theme/spacing';
 
 export function SettingsScreen() {
   const theme = useTheme();
+  const headerHeight = useHeaderHeight();
   const { serverUrl, userId, clearCredentials } = useAuthStore();
   const {
     themePreference,
@@ -42,7 +44,9 @@ export function SettingsScreen() {
   };
 
   return (
-    <AdaptiveBackground>
+    <AdaptiveBackground
+      style={Platform.OS === 'ios' ? { paddingTop: headerHeight } : undefined}
+    >
       <ScrollView contentContainerStyle={styles.content}>
         <List.Section>
           <List.Subheader>Account</List.Subheader>

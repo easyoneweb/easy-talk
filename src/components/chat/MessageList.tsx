@@ -21,6 +21,7 @@ interface MessageListProps {
   isLoadingMore: boolean;
   onMessageLongPress?: (message: Message) => void;
   lastCommonRead?: number | null;
+  contentPaddingBottom?: number;
 }
 
 export function MessageList({
@@ -32,6 +33,7 @@ export function MessageList({
   isLoadingMore,
   onMessageLongPress,
   lastCommonRead,
+  contentPaddingBottom = 0,
 }: MessageListProps) {
   const theme = useTheme();
   const flatListRef = useRef<FlatList>(null);
@@ -120,7 +122,10 @@ export function MessageList({
         onEndReachedThreshold={0.5}
         onScroll={handleScroll}
         scrollEventThrottle={100}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          contentPaddingBottom > 0 && { paddingTop: contentPaddingBottom },
+        ]}
       />
 
       {showScrollButton && (

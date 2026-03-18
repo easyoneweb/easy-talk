@@ -1,11 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Platform,
+  TextInput as RNTextInput,
+} from 'react-native';
 import { Searchbar, FAB } from 'react-native-paper';
+import { useHeaderHeight } from '@react-navigation/elements';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { GlassCard } from '@/components/platform/GlassCard';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ConversationList } from '@/components/conversations/ConversationList';
 import { AdaptiveBackground } from '@/components/platform/AdaptiveBackground';
 import { useConversations } from '@/hooks/useConversations';
+import { useAppTheme } from '@/theme/ThemeProvider';
 import type { ChatStackParamList } from '@/types/navigation';
 import type { Conversation } from '@/types/api';
 import { spacing } from '@/theme/spacing';
@@ -14,6 +23,8 @@ type NavigationProp = NativeStackNavigationProp<ChatStackParamList>;
 
 export function ChatsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const headerHeight = useHeaderHeight();
+  const { isDark } = useAppTheme();
   const { data: conversations, isLoading, refetch } = useConversations();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -34,15 +45,42 @@ export function ChatsScreen() {
   };
 
   return (
-    <AdaptiveBackground>
+    <AdaptiveBackground
+      style={Platform.OS === 'ios' ? { paddingTop: headerHeight } : undefined}
+    >
       <View style={styles.searchContainer}>
-        <Searchbar
-          placeholder="Search conversations..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          style={styles.searchbar}
-          mode={Platform.OS === 'android' ? 'bar' : 'view'}
-        />
+        {Platform.OS === 'ios' ? (
+          <GlassCard style={styles.glassSearch}>
+            <View style={styles.iosSearchRow}>
+              <MaterialCommunityIcons
+                name="magnify"
+                size={20}
+                color="#8E8E93"
+                style={styles.iosSearchIcon}
+              />
+              <RNTextInput
+                placeholder="Search conversations..."
+                placeholderTextColor="#8E8E93"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={[
+                  styles.iosSearchInput,
+                  { color: isDark ? '#FFFFFF' : '#000000' },
+                ]}
+                clearButtonMode="while-editing"
+                returnKeyType="search"
+              />
+            </View>
+          </GlassCard>
+        ) : (
+          <Searchbar
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.searchbar}
+            mode="bar"
+          />
+        )}
       </View>
 
       <ConversationList
@@ -56,7 +94,6 @@ export function ChatsScreen() {
         <FAB
           icon="plus"
           onPress={() => {
-            // Navigate to contacts to start new conversation
             const parent = navigation.getParent();
             parent?.navigate('ContactsTab');
           }}
@@ -74,6 +111,24 @@ const styles = StyleSheet.create({
   },
   searchbar: {
     elevation: 0,
+  },
+  glassSearch: {
+    borderRadius: 22,
+  },
+  iosSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 44,
+  },
+  iosSearchIcon: {
+    marginRight: 8,
+  },
+  iosSearchInput: {
+    flex: 1,
+    fontSize: 17,
+    padding: 0,
   },
   fab: {
     position: 'absolute',

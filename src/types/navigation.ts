@@ -1,10 +1,12 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Login: undefined;
   Main: undefined;
 };
 
 export type MainTabParamList = {
-  ChatsTab: undefined;
+  ChatsTab: NavigatorScreenParams<ChatStackParamList> | undefined;
   ContactsTab: undefined;
   SettingsTab: undefined;
 };

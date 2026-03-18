@@ -38,6 +38,10 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - Long polling via `LongPollingManager` class with AbortController; returns `X-Chat-Last-Common-Read` header for read receipts
 - Message read status: single checkmark (sent), double checkmark (read by all) — driven by `lastCommonRead` from API headers
 - Contacts load immediately on mount (empty-query autocomplete), with server-side search for 2+ character queries
+- iOS 26 styling: transparent glass headers (`headerTransparent` + `headerBlurEffect`) on list screens with `useHeaderHeight()` padding; opaque header on ChatWindow to avoid full-screen blur leak
+- iOS floating tab bar: pill-shaped with LiquidGlassView, `marginHorizontal: 60`, `borderRadius: 28`, `overflow: 'hidden'`
+- iOS floating message input: LiquidGlassView glass pill (`borderRadius: 28`) absolutely positioned above the tab bar; MessageList gets extra `contentPaddingBottom` to avoid content behind overlays
+- iOS message text uses RN native `Text` (not react-native-paper) for proper emoji rendering
 
 ## Commands
 - `npm start` - Start Metro dev server (dev client mode)

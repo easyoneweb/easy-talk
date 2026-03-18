@@ -49,11 +49,13 @@ export function GlassCard({ children, style }: GlassCardProps) {
         <View style={[styles.card, style]}>
           <BlurView
             style={StyleSheet.absoluteFill}
-            blurType={isDark ? 'dark' : 'light'}
+            blurType={isDark ? 'systemThinMaterialDark' : 'systemThinMaterial'}
             blurAmount={20}
             reducedTransparencyFallbackColor={isDark ? '#1c1c1e' : '#f2f2f7'}
           />
-          <View style={styles.blurContent}>{children}</View>
+          <View style={styles.blurContent} pointerEvents="box-none">
+            {children}
+          </View>
         </View>
       );
     }
@@ -88,6 +90,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   blurContent: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'relative',
   },
 });
