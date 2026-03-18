@@ -44,11 +44,14 @@ export function ChatWindowScreen({ route, navigation }: Props) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
       setKeyboardHeight(e.endCoordinates.height);
     });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+    const hideSub = Keyboard.addListener(hideEvent, () => {
       setKeyboardHeight(0);
     });
     return () => {
@@ -115,9 +118,16 @@ export function ChatWindowScreen({ route, navigation }: Props) {
 
   // On iOS, the message input floats above the tab bar (both absolutely positioned)
   // The message list gets extra bottom padding to avoid content being hidden behind them
+  // When keyboard is open, input moves up above keyboard instead of tab bar
   const inputHeight = 68; // glass pill height including padding
+  const iosInputBottom =
+    keyboardHeight > 0 ? keyboardHeight : tabBarHeight + 16;
   const bottomInset =
-    Platform.OS === 'ios' ? tabBarHeight + inputHeight + 16 : 0;
+    Platform.OS === 'ios'
+      ? keyboardHeight > 0
+        ? inputHeight + 16
+        : tabBarHeight + inputHeight + 16
+      : 0;
 
   return (
     <KeyboardAvoidingView
@@ -137,7 +147,7 @@ export function ChatWindowScreen({ route, navigation }: Props) {
         contentPaddingBottom={bottomInset}
       />
       {Platform.OS === 'ios' ? (
-        <View style={[styles.iosInputOverlay, { bottom: tabBarHeight + 16 }]}>
+        <View style={[styles.iosInputOverlay, { bottom: iosInputBottom }]}>
           <MessageInput
             onSend={handleSend}
             replyingTo={replyingTo}

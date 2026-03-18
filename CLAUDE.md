@@ -40,12 +40,13 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - Contacts load immediately on mount (empty-query autocomplete), with server-side search for 2+ character queries
 - iOS 26 styling: transparent glass headers (`headerTransparent` + `headerBlurEffect`) on list screens with `useHeaderHeight()` padding; opaque header on ChatWindow to avoid full-screen blur leak
 - iOS floating tab bar: pill-shaped with LiquidGlassView, `marginHorizontal: 60`, `borderRadius: 28`, `overflow: 'hidden'`
-- iOS floating message input: LiquidGlassView glass pill (`borderRadius: 28`) absolutely positioned above the tab bar; MessageList gets extra `contentPaddingBottom` to avoid content behind overlays
+- iOS floating message input: LiquidGlassView glass pill (`borderRadius: 28`) absolutely positioned above the tab bar; `bottom` dynamically adjusts when keyboard opens (from `tabBarHeight + 16` to `keyboardHeight`); MessageList gets extra `contentPaddingBottom` that reduces when keyboard is open
 - iOS message text uses RN native `Text` (not react-native-paper) for proper emoji rendering
 - Android message input uses RN native `TextInput` (not react-native-paper) for proper vertical text centering
-- Media attachments in messages: images rendered via Nextcloud preview API (`/index.php/core/preview?fileId=`), GIFs loaded via WebDAV raw file URL (`/remote.php/dav/files/{userId}/{path}`) for animation support; videos show preview thumbnail with play overlay
-- Icon fonts loaded via `expo-font` (`useFonts` in App.tsx) for cross-platform support; iOS additionally uses `UIAppFonts` in app.json
-- Android keyboard handling: `Keyboard` event listeners in ChatWindowScreen track keyboard height and apply `paddingBottom` to push input above keyboard (iOS uses `KeyboardAvoidingView` with `behavior="padding"`)
+- Media attachments in messages: images rendered via Nextcloud preview API (`/index.php/core/preview?fileId=`), GIFs loaded via WebDAV raw file URL (`/remote.php/dav/files/{userId}/{path}`) for animation support; videos show preview thumbnail with play overlay. Media max width capped at 300px on web/desktop, 65% of screen width on mobile
+- Metro config (`metro.config.js`): resolves `@react-native-community/blur` and `@callstack/liquid-glass` to empty modules on web platform (these native-only modules have no web entry points)
+- Icon fonts: iOS gets MaterialCommunityIcons from `react-native-vector-icons` autolinking (podspec `s.resources`); Android gets it from `expo-font` plugin (`android.fonts` in app.json). Both platforms use `useFonts` in App.tsx for runtime loading
+- Keyboard handling: `Keyboard` event listeners in ChatWindowScreen track keyboard height on both platforms (`keyboardWillShow`/`Hide` on iOS, `keyboardDidShow`/`Hide` on Android). iOS adjusts absolute input position and content padding; Android applies `paddingBottom` to push input above keyboard
 
 ## Commands
 - `npm start` - Start Metro dev server (dev client mode)

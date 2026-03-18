@@ -6,6 +6,7 @@ import {
   Text as RNText,
   Dimensions,
   Modal,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Text, useTheme, ActivityIndicator } from 'react-native-paper';
@@ -15,7 +16,8 @@ import { MessageType } from '@/types/api';
 import { useAuthStore } from '@/stores/authStore';
 import { spacing, borderRadius } from '@/theme/spacing';
 
-const MEDIA_MAX_WIDTH = Dimensions.get('window').width * 0.65;
+const MEDIA_MAX_WIDTH =
+  Platform.OS === 'web' ? 300 : Dimensions.get('window').width * 0.65;
 const MEDIA_MAX_HEIGHT = 300;
 
 const IMAGE_MIMETYPES = [
@@ -145,7 +147,7 @@ function MediaAttachment({
         <Image
           source={{ uri: imageUrl, headers: authHeaders }}
           style={styles.mediaImage}
-          contentFit="cover"
+          contentFit="contain"
           autoplay={true}
           onLoad={handleLoadEnd}
           onError={handleError}

@@ -14,12 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ru.easyoneweb.easytalk",
-      "infoPlist": {
-        "UIAppFonts": [
-          "MaterialCommunityIcons.ttf"
-        ]
-      }
+      "bundleIdentifier": "ru.easyoneweb.easytalk"
     },
     "android": {
       "package": "ru.easyoneweb.easytalk",
@@ -41,9 +36,11 @@
       [
         "expo-font",
         {
-          "fonts": [
-            "./node_modules/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"
-          ]
+          "android": {
+            "fonts": [
+              "./node_modules/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"
+            ]
+          }
         }
       ],
       "expo-image"

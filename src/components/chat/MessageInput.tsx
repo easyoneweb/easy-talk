@@ -200,7 +200,7 @@ export function MessageInput({
             placeholder="Type a message..."
             placeholderTextColor={theme.colors.onSurfaceVariant}
             multiline
-            numberOfLines={MESSAGES.MAX_INPUT_LINES}
+            numberOfLines={Platform.OS === 'web' ? 1 : MESSAGES.MAX_INPUT_LINES}
             style={[styles.androidInput, { color: theme.colors.onSurface }]}
             editable={!disabled}
             onSubmitEditing={handleSend}
