@@ -21,8 +21,8 @@
     "web": "expo start --web",
     "build:web": "expo export --platform web",
     "electron:dev": "concurrently \"expo start --web --port 8081\" \"wait-on http://localhost:8081 && tsc -p electron/tsconfig.json && electron dist-electron/main.js --dev\"",
-    "electron:build": "npm run build:web && tsc -p electron/tsconfig.json && electron-forge make --config electron/forge.config.ts",
-    "electron:package": "npm run build:web && tsc -p electron/tsconfig.json && electron-forge package --config electron/forge.config.ts",
+    "electron:build": "npm run build:web && tsc -p electron/tsconfig.json && electron-forge make",
+    "electron:package": "npm run build:web && tsc -p electron/tsconfig.json && electron-forge package",
     "clean": "expo prebuild --clean && rm -rf android/build ios/build dist-electron"
   },
   "dependencies": {
@@ -81,6 +81,9 @@
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
     "wait-on": "^9.0.4"
+  },
+  "config": {
+    "forge": "./dist-electron/forge.config.js"
   },
   "private": true
 }

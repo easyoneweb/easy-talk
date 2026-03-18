@@ -10,7 +10,21 @@ const config: ForgeConfig = {
     name: 'Easy Talk',
     executableName: 'easy-talk',
     asar: true,
-    icon: path.resolve(__dirname, '..', 'assets', 'icon'),
+    icon: path.resolve(process.cwd(), 'assets', 'icon'),
+    ignore: [
+      // Ignore everything by default, then allow only what Electron needs
+      /^\/(?!(dist-electron|dist|assets|package\.json)($|\/))/,
+    ],
+  },
+  hooks: {
+    packageAfterCopy: async (_config, buildPath) => {
+      const fs = await import('fs');
+      const pathMod = await import('path');
+      const pkgPath = pathMod.join(buildPath, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      pkg.main = 'dist-electron/main.js';
+      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
+    },
   },
   makers: [
     new MakerSquirrel({

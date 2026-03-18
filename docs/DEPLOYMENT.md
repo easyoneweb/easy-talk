@@ -501,7 +501,9 @@ npm run electron:build
 This:
 1. Exports the Expo web bundle to `dist/`
 2. Compiles Electron TypeScript to `dist-electron/`
-3. Runs Electron Forge to create platform-specific installers
+3. Runs Electron Forge to package and create platform-specific installers
+
+The Forge config is at `electron/forge.config.ts` (compiled to `dist-electron/forge.config.js`), referenced via `config.forge` in `package.json`. The packager bundles only `dist-electron/`, `dist/`, `assets/`, and `package.json` into the ASAR archive (all other files are excluded to keep the bundle small).
 
 ### What each platform produces
 
@@ -537,6 +539,7 @@ Desktop support uses **Expo Web + Electron**:
 - React components render via `react-native-web` in Electron's Chromium renderer
 - Electron main process handles: window management, system tray, native menus, encrypted credential storage (via `safeStorage`), and OS notifications
 - Communication between renderer and main process uses IPC via a preload script (`electron/preload.ts`)
+- Production builds use a custom `app://` protocol to serve the web bundle from the `dist/` directory inside the ASAR archive, ensuring absolute asset paths resolve correctly
 
 ### Service abstractions
 
@@ -563,10 +566,10 @@ Native mobile APIs are replaced with web equivalents via Metro's `.web.ts` file 
 
 ```
 electron/
-  main.ts          — Main process (window, IPC handlers, tray, menus)
+  main.ts          — Main process (window, IPC handlers, tray, menus, app:// protocol)
   preload.ts       — contextBridge exposing electronAPI to renderer
-  forge.config.ts  — Electron Forge packaging configuration
-  tsconfig.json    — TypeScript config for Electron code
+  forge.config.ts  — Electron Forge packaging configuration (ignore patterns, hooks, makers)
+  tsconfig.json    — TypeScript config for Electron code (compiles to dist-electron/)
 ```
 
 ### CORS handling
@@ -696,6 +699,13 @@ npm run web
 
 # Terminal 2 (after Metro is ready)
 tsc -p electron/tsconfig.json && electron dist-electron/main.js --dev
+```
+
+**macOS Dock shows default Electron icon instead of Easy Talk icon**
+macOS aggressively caches app icons. After installing a new build, reset the icon cache:
+```bash
+/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -kill -r -domain local -domain system -domain user
+killall Dock
 ```
 
 **`npm run electron:build` fails with "cannot find module"**

@@ -8,12 +8,23 @@ import {
   Menu,
   nativeImage,
   Notification,
+  protocol,
+  net,
 } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let isQuitting = false;
+
+// Register custom protocol before app is ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: { standard: true, secure: true, supportFetchAPI: true },
+  },
+]);
 
 const STORE_PATH = path.join(app.getPath('userData'), 'secure-store.json');
 
@@ -85,12 +96,12 @@ function createWindow(): void {
     mainWindow.loadURL('http://localhost:8081');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    mainWindow.loadURL('app://./index.html');
   }
 
   mainWindow.on('close', (event) => {
-    // Minimize to tray instead of quitting
-    if (tray) {
+    // Minimize to tray instead of quitting, unless app is quitting
+    if (tray && !isQuitting) {
       event.preventDefault();
       mainWindow?.hide();
     }
@@ -179,9 +190,20 @@ function createAppMenu(): void {
 
 // --- App Lifecycle ---
 
+app.on('before-quit', () => {
+  isQuitting = true;
+});
+
 app.whenReady().then(() => {
   // Respect system dark mode preference so CSS prefers-color-scheme works
   nativeTheme.themeSource = 'system';
+
+  // Serve dist/ folder via custom app:// protocol so absolute paths resolve correctly
+  protocol.handle('app', (request) => {
+    const url = new URL(request.url);
+    const filePath = path.join(__dirname, '..', 'dist', url.pathname);
+    return net.fetch(`file://${filePath}`);
+  });
 
   createAppMenu();
   createWindow();

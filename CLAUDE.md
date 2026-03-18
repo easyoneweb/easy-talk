@@ -85,4 +85,9 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - Authentication uses Login Flow v2 (browser-based; `window.open()` on web, `expo-web-browser` on mobile)
 - Electron uses `webSecurity: false` to bypass CORS (desktop app talks directly to Nextcloud servers)
 - Electron uses `nativeTheme.themeSource = 'system'` to respect OS dark mode
+- Electron production build uses custom `app://` protocol (registered via `protocol.handle`) to serve the `dist/` web bundle, so absolute asset paths (`/_expo/static/...`) resolve correctly inside the ASAR archive
+- Electron Forge config is loaded via `config.forge` in `package.json` pointing to `./dist-electron/forge.config.js` (compiled from `electron/forge.config.ts`)
+- Electron packaging uses an `ignore` regex to only bundle `dist-electron/`, `dist/`, `assets/`, and `package.json` into the ASAR (excludes `node_modules`, `src/`, native dirs) and a `packageAfterCopy` hook to rewrite `package.json` `main` from `index.ts` to `dist-electron/main.js`
+- Electron tray: closing the window hides to tray; Cmd+Q / menu Quit actually quits (controlled by `isQuitting` flag set on `before-quit` event)
+- macOS icon: `assets/icon.icns` generated from `icon.png`; Electron packager copies it as `electron.icns` into the app bundle. After installing a new build, run `lsregister -kill` + `killall Dock` if the Dock shows a stale cached icon
 - Desktop uses Material Design 3 (react-native-paper); iOS Liquid Glass/blur effects are mobile-only

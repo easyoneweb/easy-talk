@@ -25,6 +25,7 @@ Easy Talk connects to your Nextcloud server and gives you a native chat experien
 - Node.js 18+
 - For iOS builds: macOS with Xcode 16+, CocoaPods
 - For Android builds: JDK 17, Android Studio, Android SDK (API 35)
+- For desktop builds: Electron and Forge makers are included as devDependencies (no extra setup)
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full setup guide.
 
@@ -108,6 +109,8 @@ npm run typecheck   # TypeScript check
 npm run lint        # ESLint + Prettier
 npm run lint:fix    # Auto-fix issues
 npm run format      # Format with Prettier
+npm run web         # Run in browser (react-native-web)
+npm run electron:dev  # Run desktop app (Electron dev mode)
 ```
 
 ## License
