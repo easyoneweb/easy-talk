@@ -23,7 +23,7 @@ Easy Talk connects to your Nextcloud server and gives you a native chat experien
 ## Requirements
 
 - Node.js 18+
-- For iOS builds: macOS with Xcode 16+, CocoaPods
+- For iOS builds: macOS with Xcode 16+ (Xcode 26+ for Liquid Glass on iOS 26), CocoaPods
 - For Android builds: JDK 17, Android Studio, Android SDK (API 35)
 - For desktop builds: Electron and Forge makers are included as devDependencies (no extra setup)
 
@@ -90,7 +90,7 @@ src/
 
 | | |
 |---|---|
-| Framework | Expo SDK 55 (React Native 0.83) |
+| Framework | Expo SDK 55 (React Native 0.83, React 19.2) |
 | Language | TypeScript |
 | Navigation | React Navigation |
 | UI (Android) | React Native Paper (Material Design 3) |

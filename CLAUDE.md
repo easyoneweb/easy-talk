@@ -4,7 +4,7 @@
 Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextcloud Talk client with React Native (Expo SDK 55). Desktop support via Expo Web (react-native-web) + Electron.
 
 ## Tech Stack
-- **Framework**: Expo SDK 55 with dev client (RN 0.83)
+- **Framework**: Expo SDK 55 with dev client (RN 0.83, React 19.2)
 - **Language**: TypeScript (strict mode)
 - **Navigation**: React Navigation (bottom tabs on mobile, drawer sidebar on desktop, native stack)
 - **Desktop**: Electron + react-native-web (Expo web platform)
@@ -24,7 +24,7 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - `src/services/` - Long polling, secure storage, SQLite database, notifications, media picker
 - `src/types/` - TypeScript type definitions (includes electron.d.ts, sql.js.d.ts)
 - `src/utils/` - Utility functions (loadWebIcons)
-- `src/config/` - Constants and configuration
+- `src/config/` - Constants and configuration (API_PATHS, polling intervals, message settings, STORAGE_KEYS)
 - `electron/` - Electron main process, preload script, Forge config, tsconfig
 
 ## Key Patterns
@@ -45,11 +45,12 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - Android message input uses RN native `TextInput` (not react-native-paper) for proper vertical text centering
 - Media attachments in messages: images rendered via Nextcloud preview API (`/index.php/core/preview?fileId=`), GIFs loaded via WebDAV raw file URL (`/remote.php/dav/files/{userId}/{path}`) for animation support; videos show preview thumbnail with play overlay. Media max width capped at 300px on web/desktop, 65% of screen width on mobile
 - Media sending: 2-step Nextcloud flow — (1) upload file to user's `/Talk/` directory via WebDAV PUT, (2) share to conversation via OCS file sharing API (`shareType: 10`). Upload uses `XMLHttpRequest` on mobile (RN's `fetch`/axios can't reliably send Blob PUT bodies) and `fetch` + Blob on web/desktop. HEIC images from iOS are normalized to JPEG (mimeType + extension) for Nextcloud preview compatibility
-- Media picker: `expo-image-picker` on mobile (gallery + camera), hidden `<input type="file">` on web/desktop (`.web.ts` variant). iOS shows ActionSheetIOS for gallery/camera choice; Android/desktop opens gallery directly, camera available via dedicated button
+- Media picker: `expo-image-picker` on mobile (gallery + camera), hidden `<input type="file">` on web/desktop (`.web.ts` variant). iOS shows ActionSheetIOS for gallery/camera choice; Android/desktop opens gallery directly, camera available via dedicated button. HEIC normalization (`normalizeImageMimeType`, `normalizeFileName`) runs inside `mediaPicker.ts` before the file is returned — iOS uses `quality: 0.9` to force JPEG re-encoding, Android/web use `quality: 0.8`
 - Message input attachment flow: `useMediaUpload` hook manages pick → preview → upload → share lifecycle; `MessageInput` shows media preview strip with thumbnail, filename, progress bar, and cancel button; send button enabled with media-only (no text required)
 - Metro config (`metro.config.js`): resolves `@react-native-community/blur` and `@callstack/liquid-glass` to empty modules on web platform (these native-only modules have no web entry points)
 - Icon fonts: iOS gets MaterialCommunityIcons from `react-native-vector-icons` autolinking (podspec `s.resources`); Android gets it from `expo-font` plugin (`android.fonts` in app.json). Both platforms use `useFonts` in App.tsx for runtime loading
 - Keyboard handling: `Keyboard` event listeners in ChatWindowScreen track keyboard height on both platforms (`keyboardWillShow`/`Hide` on iOS, `keyboardDidShow`/`Hide` on Android). iOS adjusts absolute input position and content padding; Android applies `paddingBottom` to push input above keyboard
+- Date separators in MessageList: deduplication key is `"year-month-day"` string built from numeric parts (e.g. `"2026-2-19"`); the stored `timestamp` (ms) is passed to `formatDateHeader` which constructs `new Date(timestamp)` — avoids `Invalid Date` from re-parsing locale strings
 
 ## Commands
 - `npm start` - Start Metro dev server (dev client mode)
@@ -85,7 +86,7 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - App identifier: `ru.easyoneweb.easytalk` (all platforms)
 - Native modules require dev client builds (not Expo Go) on mobile
 - Nextcloud Talk API v4 for conversations, v1 for chat messages
-- Authentication uses Login Flow v2 (browser-based; `window.open()` on web, `expo-web-browser` on mobile)
+- Authentication uses Login Flow v2 (browser-based; `window.open()` on web, `expo-web-browser` on mobile) — flow produces an app-specific password used for all subsequent API calls (basic auth with `userId:appPassword`)
 - Electron uses `webSecurity: false` to bypass CORS (desktop app talks directly to Nextcloud servers)
 - Electron uses `nativeTheme.themeSource = 'system'` to respect OS dark mode
 - Electron production build uses custom `app://` protocol (registered via `protocol.handle`) to serve the `dist/` web bundle, so absolute asset paths (`/_expo/static/...`) resolve correctly inside the ASAR archive

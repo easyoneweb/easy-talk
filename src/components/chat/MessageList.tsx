@@ -58,17 +58,18 @@ export function MessageList({
   const messagesWithDates = useMemo(() => {
     const result: (
       | { type: 'message'; data: Message }
-      | { type: 'date'; date: string }
+      | { type: 'date'; date: string; timestamp: number }
     )[] = [];
     let lastDate = '';
 
     // Messages are in reverse order (newest first) due to inverted list
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      const date = new Date(msg.timestamp * 1000).toLocaleDateString();
+      const d = new Date(msg.timestamp * 1000);
+      const date = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
       if (date !== lastDate) {
-        result.push({ type: 'date', date });
+        result.push({ type: 'date', date, timestamp: msg.timestamp * 1000 });
         lastDate = date;
       }
       result.push({ type: 'message', data: msg });
@@ -86,7 +87,7 @@ export function MessageList({
               variant="labelSmall"
               style={{ color: theme.colors.onSurfaceVariant }}
             >
-              {formatDateHeader(item.date)}
+              {formatDateHeader(item.timestamp)}
             </Text>
           </View>
         );
@@ -145,8 +146,8 @@ export function MessageList({
   );
 }
 
-function formatDateHeader(dateStr: string): string {
-  const date = new Date(dateStr);
+function formatDateHeader(timestamp: number): string {
+  const date = new Date(timestamp);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
