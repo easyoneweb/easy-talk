@@ -134,6 +134,8 @@ This creates:
 
 **Important:** These generated directories are gitignored. Always regenerate from `app.json` via prebuild. Do not manually edit files in `android/` or `ios/` unless you know the changes will be overwritten.
 
+**Note:** The `expo-image-picker` plugin configures iOS photo library and camera permissions (`NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`) and Android permissions automatically. If you previously ran prebuild without this plugin, run `npm run prebuild:clean` to pick up the new permissions.
+
 ---
 
 ## Android — Debug Build
@@ -550,6 +552,7 @@ Native mobile APIs are replaced with web equivalents via Metro's `.web.ts` file 
 | **Secure storage** | `expo-secure-store` | `localStorage` (browser) / Electron `safeStorage` (desktop app) |
 | **Database** | `expo-sqlite` | `sql.js` (SQLite compiled to WASM) with IndexedDB persistence |
 | **Notifications** | `expo-notifications` | Web Notifications API / Electron native notifications |
+| **Media picker** | `expo-image-picker` (gallery + camera) | Hidden `<input type="file">` element |
 | **Long polling** | `AppState` | `document.visibilityState` (handled by react-native-web) |
 | **OAuth browser** | `expo-web-browser` | `window.open()` |
 

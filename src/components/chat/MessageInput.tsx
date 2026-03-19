@@ -4,10 +4,13 @@ import {
   View,
   Platform,
   TextInput as RNTextInput,
+  ActionSheetIOS,
 } from 'react-native';
-import { IconButton, Text, useTheme } from 'react-native-paper';
+import { Image } from 'expo-image';
+import { IconButton, ProgressBar, Text, useTheme } from 'react-native-paper';
 import { useAppTheme } from '@/theme/ThemeProvider';
 import type { Message } from '@/types/api';
+import type { MediaFile } from '@/api/fileSharing';
 import { spacing } from '@/theme/spacing';
 import { MESSAGES } from '@/config/constants';
 
@@ -36,16 +39,28 @@ if (Platform.OS === 'ios') {
 
 interface MessageInputProps {
   onSend: (message: string, replyTo?: number) => void;
+  onPickMedia: () => void;
+  onPickCamera?: () => void;
   replyingTo: Message | null;
   onCancelReply: () => void;
   disabled?: boolean;
+  pendingMedia: MediaFile | null;
+  onCancelMedia: () => void;
+  uploadProgress: number | null;
+  uploadError: string | null;
 }
 
 export function MessageInput({
   onSend,
+  onPickMedia,
+  onPickCamera,
   replyingTo,
   onCancelReply,
   disabled,
+  pendingMedia,
+  onCancelMedia,
+  uploadProgress,
+  uploadError,
 }: MessageInputProps) {
   const theme = useTheme();
   const { isDark } = useAppTheme();
@@ -53,11 +68,36 @@ export function MessageInput({
 
   const handleSend = () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed && !pendingMedia) return;
     onSend(trimmed, replyingTo?.id);
     setText('');
     onCancelReply();
   };
+
+  const handleAttachPress = () => {
+    if (Platform.OS === 'ios' && onPickCamera) {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Photo Library', 'Camera'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) onPickMedia();
+          else if (buttonIndex === 2) onPickCamera();
+        },
+      );
+    } else if (Platform.OS === 'android' && onPickCamera) {
+      // On Android, use a simple two-tap: first tap opens gallery,
+      // long-press could open camera (but for simplicity, we show gallery
+      // and add camera as a separate icon if needed).
+      // For now, directly open gallery. Camera available via dedicated button.
+      onPickMedia();
+    } else {
+      onPickMedia();
+    }
+  };
+
+  const canSend = (text.trim().length > 0 || !!pendingMedia) && !disabled;
 
   const replyBar = replyingTo ? (
     <View
@@ -88,12 +128,77 @@ export function MessageInput({
     </View>
   ) : null;
 
+  const mediaPreview = pendingMedia ? (
+    <View
+      style={[
+        styles.mediaPreview,
+        {
+          backgroundColor:
+            Platform.OS === 'ios'
+              ? 'rgba(118, 118, 128, 0.12)'
+              : theme.colors.surfaceVariant,
+        },
+      ]}
+    >
+      <View style={styles.mediaThumbnailContainer}>
+        <Image
+          source={{ uri: pendingMedia.uri }}
+          style={styles.mediaThumbnail}
+          contentFit="cover"
+        />
+        {uploadProgress !== null && (
+          <View style={styles.progressOverlay}>
+            <ProgressBar
+              progress={uploadProgress}
+              color={theme.colors.primary}
+              style={styles.progressBar}
+            />
+          </View>
+        )}
+      </View>
+      <Text
+        variant="bodySmall"
+        numberOfLines={1}
+        style={[styles.mediaFileName, { color: theme.colors.onSurfaceVariant }]}
+      >
+        {pendingMedia.fileName}
+      </Text>
+      <IconButton
+        icon="close"
+        size={16}
+        onPress={onCancelMedia}
+        disabled={uploadProgress !== null}
+      />
+    </View>
+  ) : null;
+
+  const errorBar = uploadError ? (
+    <View style={styles.errorBar}>
+      <Text
+        variant="labelSmall"
+        style={{ color: theme.colors.error }}
+        numberOfLines={1}
+      >
+        {uploadError}
+      </Text>
+    </View>
+  ) : null;
+
   // iOS: native TextInput with iMessage-style rounded field + glass/blur background
   if (Platform.OS === 'ios') {
     const iosInputContent = (
       <>
         {replyBar}
+        {mediaPreview}
+        {errorBar}
         <View style={styles.inputRow}>
+          <IconButton
+            icon="plus"
+            size={22}
+            onPress={handleAttachPress}
+            disabled={disabled || uploadProgress !== null}
+            style={styles.attachButton}
+          />
           <View style={styles.iosInputWrapper}>
             <RNTextInput
               value={text}
@@ -111,11 +216,20 @@ export function MessageInput({
               blurOnSubmit={false}
             />
           </View>
+          {onPickCamera && !pendingMedia && (
+            <IconButton
+              icon="camera"
+              size={20}
+              onPress={onPickCamera}
+              disabled={disabled || uploadProgress !== null}
+              style={styles.cameraButton}
+            />
+          )}
           <IconButton
             icon="arrow-up-circle"
             mode="contained"
             onPress={handleSend}
-            disabled={!text.trim() || disabled}
+            disabled={!canSend}
             iconColor="#FFFFFF"
             containerColor={theme.colors.primary}
             size={22}
@@ -172,7 +286,7 @@ export function MessageInput({
     );
   }
 
-  // Android: Material Design input with native TextInput for proper centering
+  // Android / Web / Desktop: Material Design input
   return (
     <View
       style={[
@@ -184,7 +298,16 @@ export function MessageInput({
       ]}
     >
       {replyBar}
+      {mediaPreview}
+      {errorBar}
       <View style={styles.inputRow}>
+        <IconButton
+          icon="paperclip"
+          size={22}
+          onPress={handleAttachPress}
+          disabled={disabled || uploadProgress !== null}
+          style={styles.attachButton}
+        />
         <View
           style={[
             styles.androidInputWrapper,
@@ -208,11 +331,19 @@ export function MessageInput({
             textAlignVertical="center"
           />
         </View>
+        {onPickCamera && !pendingMedia && (
+          <IconButton
+            icon="camera"
+            size={20}
+            onPress={onPickCamera}
+            disabled={disabled || uploadProgress !== null}
+          />
+        )}
         <IconButton
           icon="send"
           mode="contained"
           onPress={handleSend}
-          disabled={!text.trim() || disabled}
+          disabled={!canSend}
           iconColor={theme.colors.onPrimary}
           containerColor={theme.colors.primary}
           size={20}
@@ -289,5 +420,49 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     padding: 0,
     textAlignVertical: 'center',
+  },
+  attachButton: {
+    margin: 0,
+    marginRight: 2,
+  },
+  cameraButton: {
+    margin: 0,
+    marginLeft: 2,
+  },
+  mediaPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.sm,
+    marginBottom: spacing.xs,
+    borderRadius: 8,
+    paddingLeft: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  mediaThumbnailContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  mediaThumbnail: {
+    width: 48,
+    height: 48,
+  },
+  progressOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  progressBar: {
+    height: 4,
+    borderRadius: 0,
+  },
+  mediaFileName: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  errorBar: {
+    marginHorizontal: spacing.sm,
+    marginBottom: spacing.xs,
   },
 });

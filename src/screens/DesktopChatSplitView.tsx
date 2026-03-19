@@ -11,6 +11,7 @@ import {
   useSendMessage,
   useMarkAsRead,
 } from '@/hooks/useMessages';
+import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useLongPolling } from '@/hooks/useLongPolling';
 import {
   joinConversation,
@@ -132,6 +133,7 @@ function ChatPanel({ token, displayName, userId }: ChatPanelProps) {
   } = useMessages(token);
   const sendMessage = useSendMessage(token);
   const markAsRead = useMarkAsRead(token);
+  const mediaUpload = useMediaUpload(token);
 
   const allMessages = useMemo(() => data?.pages.flat() ?? [], [data]);
   const lastKnownMessageId =
@@ -160,10 +162,17 @@ function ChatPanel({ token, displayName, userId }: ChatPanelProps) {
   }, [lastKnownMessageId]);
 
   const handleSend = useCallback(
-    (message: string, replyTo?: number) => {
-      sendMessage.mutate({ message, replyTo });
+    async (message: string, replyTo?: number) => {
+      if (mediaUpload.pendingMedia) {
+        const success = await mediaUpload.sendMedia();
+        if (success && message) {
+          sendMessage.mutate({ message, replyTo });
+        }
+      } else if (message) {
+        sendMessage.mutate({ message, replyTo });
+      }
     },
-    [sendMessage],
+    [sendMessage, mediaUpload],
   );
 
   const handleMessageLongPress = useCallback((message: Message) => {
@@ -197,9 +206,14 @@ function ChatPanel({ token, displayName, userId }: ChatPanelProps) {
       />
       <MessageInput
         onSend={handleSend}
+        onPickMedia={mediaUpload.pickFromGallery}
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
-        disabled={sendMessage.isPending}
+        disabled={sendMessage.isPending || mediaUpload.isUploading}
+        pendingMedia={mediaUpload.pendingMedia}
+        onCancelMedia={mediaUpload.cancelMedia}
+        uploadProgress={mediaUpload.uploadProgress}
+        uploadError={mediaUpload.error}
       />
     </View>
   );

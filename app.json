@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "ru.easyoneweb.easytalk",
       "infoPlist": {
-        "LSApplicationCategoryType": "public.app-category.social-networking"
+        "LSApplicationCategoryType": "public.app-category.social-networking",
+        "NSPhotoLibraryUsageDescription": "Easy Talk needs access to your photo library to send images and videos.",
+        "NSCameraUsageDescription": "Easy Talk needs camera access to take photos and videos."
       }
     },
     "android": {
@@ -46,7 +48,14 @@
           }
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Easy Talk needs access to your photo library to send images and videos.",
+          "cameraPermission": "Easy Talk needs camera access to take photos and videos."
+        }
+      ]
     ]
   }
 }

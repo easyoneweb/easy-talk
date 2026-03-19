@@ -16,6 +16,7 @@ import {
   useSendMessage,
   useMarkAsRead,
 } from '@/hooks/useMessages';
+import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useLongPolling } from '@/hooks/useLongPolling';
 import {
   joinConversation,
@@ -71,6 +72,7 @@ export function ChatWindowScreen({ route, navigation }: Props) {
 
   const sendMessage = useSendMessage(token);
   const markAsRead = useMarkAsRead(token);
+  const mediaUpload = useMediaUpload(token);
 
   const allMessages = useMemo(() => data?.pages.flat() ?? [], [data]);
 
@@ -104,10 +106,19 @@ export function ChatWindowScreen({ route, navigation }: Props) {
   }, [lastKnownMessageId]);
 
   const handleSend = useCallback(
-    (message: string, replyTo?: number) => {
-      sendMessage.mutate({ message, replyTo });
+    async (message: string, replyTo?: number) => {
+      if (mediaUpload.pendingMedia) {
+        const success = await mediaUpload.sendMedia();
+        // Send text as a separate message if non-empty (Nextcloud file shares
+        // create their own system message; captions aren't supported)
+        if (success && message) {
+          sendMessage.mutate({ message, replyTo });
+        }
+      } else if (message) {
+        sendMessage.mutate({ message, replyTo });
+      }
     },
-    [sendMessage],
+    [sendMessage, mediaUpload],
   );
 
   const handleMessageLongPress = useCallback((message: Message) => {
@@ -150,9 +161,15 @@ export function ChatWindowScreen({ route, navigation }: Props) {
         <View style={[styles.iosInputOverlay, { bottom: iosInputBottom }]}>
           <MessageInput
             onSend={handleSend}
+            onPickMedia={mediaUpload.pickFromGallery}
+            onPickCamera={mediaUpload.pickFromCamera}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
-            disabled={sendMessage.isPending}
+            disabled={sendMessage.isPending || mediaUpload.isUploading}
+            pendingMedia={mediaUpload.pendingMedia}
+            onCancelMedia={mediaUpload.cancelMedia}
+            uploadProgress={mediaUpload.uploadProgress}
+            uploadError={mediaUpload.error}
           />
         </View>
       ) : (
@@ -163,9 +180,15 @@ export function ChatWindowScreen({ route, navigation }: Props) {
         >
           <MessageInput
             onSend={handleSend}
+            onPickMedia={mediaUpload.pickFromGallery}
+            onPickCamera={mediaUpload.pickFromCamera}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
-            disabled={sendMessage.isPending}
+            disabled={sendMessage.isPending || mediaUpload.isUploading}
+            pendingMedia={mediaUpload.pendingMedia}
+            onCancelMedia={mediaUpload.cancelMedia}
+            uploadProgress={mediaUpload.uploadProgress}
+            uploadError={mediaUpload.error}
           />
         </View>
       )}

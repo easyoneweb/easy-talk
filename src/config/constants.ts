@@ -7,6 +7,8 @@ export const API_PATHS = {
   AVATAR: '/index.php/avatar',
   CAPABILITIES: '/ocs/v2.php/cloud/capabilities',
   PUSH_NOTIFICATIONS: '/ocs/v2.php/apps/notifications/api/v2/push',
+  WEBDAV_FILES: '/remote.php/dav/files',
+  FILE_SHARING: '/ocs/v2.php/apps/files_sharing/api/v1/shares',
 } as const;
 
 export const POLLING = {
