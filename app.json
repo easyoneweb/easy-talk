@@ -56,7 +56,8 @@
           "photosPermission": "Easy Talk needs access to your photo library to send images and videos.",
           "cameraPermission": "Easy Talk needs camera access to take photos and videos."
         }
-      ]
+      ],
+      "expo-video"
     ]
   }
 }

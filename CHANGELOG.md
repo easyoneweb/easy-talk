@@ -37,7 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 #### Media
 - Inline image rendering via Nextcloud preview API (`/index.php/core/preview?fileId=`)
 - Animated GIF rendering via WebDAV raw file URL using `expo-image`
-- Video message thumbnails with play overlay
+- Video message thumbnails with play overlay (Nextcloud preview API with `forceIcon=0&mimeFallback=0` for actual frame previews)
+- Fullscreen video player on all platforms: `expo-video` with custom controls (play/pause, mute, seekable progress track, auto-hide) on iOS/Android; HTML5 `<video>` with blob URL auth on Electron/web
 - Media width capped at 300px on web/desktop, 65% of screen width on mobile
 - Media sending: 2-step Nextcloud flow — WebDAV PUT upload to `/Talk/` directory, then OCS file sharing API (`shareType: 10`)
 - `expo-image-picker` for gallery and camera on mobile; hidden `<input type="file">` on web/desktop

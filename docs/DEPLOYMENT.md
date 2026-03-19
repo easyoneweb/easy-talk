@@ -555,6 +555,7 @@ Native mobile APIs are replaced with web equivalents via Metro's `.web.ts` file 
 | **Database** | `expo-sqlite` | `sql.js` (SQLite compiled to WASM) with IndexedDB persistence |
 | **Notifications** | `expo-notifications` | Web Notifications API / Electron native notifications |
 | **Media picker** | `expo-image-picker` (gallery + camera) | Hidden `<input type="file">` element |
+| **Video playback** | `expo-video` (`VideoView` + `useVideoPlayer`) | HTML5 `<video>` with blob URL (fetched via `fetch` + auth headers) |
 | **Long polling** | `AppState` | `document.visibilityState` (handled by react-native-web) |
 | **OAuth browser** | `expo-web-browser` | `window.open()` |
 

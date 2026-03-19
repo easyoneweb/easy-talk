@@ -5,9 +5,9 @@ import {
   Pressable,
   Text as RNText,
   Dimensions,
-  Modal,
   Platform,
 } from 'react-native';
+import { VideoPlayerModal } from '@/components/chat/VideoPlayerModal';
 import { Image } from 'expo-image';
 import { Text, useTheme, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -66,7 +66,7 @@ function getFilePreviewUrl(
   width = 400,
   height = 400,
 ): string {
-  return `${serverUrl}/index.php/core/preview?fileId=${fileId}&x=${width}&y=${height}&a=1`;
+  return `${serverUrl}/index.php/core/preview?fileId=${fileId}&x=${width}&y=${height}&a=1&forceIcon=0&mimeFallback=0`;
 }
 
 function getFileDownloadUrl(
@@ -186,31 +186,13 @@ function MediaAttachment({
             />
           </View>
         </Pressable>
-        <Modal
+        <VideoPlayerModal
           visible={videoModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setVideoModalVisible(false)}
-        >
-          <Pressable
-            style={styles.videoModalBackdrop}
-            onPress={() => setVideoModalVisible(false)}
-          >
-            <View style={styles.videoModalContent}>
-              <Image
-                source={{ uri: downloadUrl, headers: authHeaders }}
-                style={styles.videoModalImage}
-                contentFit="contain"
-              />
-              <Text
-                variant="bodySmall"
-                style={{ color: '#fff', marginTop: spacing.sm }}
-              >
-                {fileName}
-              </Text>
-            </View>
-          </Pressable>
-        </Modal>
+          onClose={() => setVideoModalVisible(false)}
+          videoUrl={downloadUrl}
+          authHeaders={authHeaders}
+          fileName={fileName}
+        />
       </>
     );
   }
@@ -483,20 +465,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  videoModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoModalContent: {
-    alignItems: 'center',
-    padding: spacing.md,
-  },
-  videoModalImage: {
-    width: Dimensions.get('window').width * 0.9,
-    height: Dimensions.get('window').height * 0.6,
   },
   fileAttachment: {
     flexDirection: 'row',
