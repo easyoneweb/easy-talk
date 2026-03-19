@@ -40,7 +40,7 @@ interface MessageBubbleProps {
   isOwn: boolean;
   showSender: boolean;
   lastCommonRead?: number | null;
-  onLongPress?: () => void;
+  onMessageLongPress?: (message: Message) => void;
 }
 
 function getFileParams(
@@ -83,7 +83,7 @@ function getFileDownloadUrl(
   return `${serverUrl}/remote.php/dav/files/${userId}/${encodeURIComponent(param.name)}`;
 }
 
-function MediaAttachment({
+const MediaAttachment = React.memo(function MediaAttachment({
   param,
   serverUrl,
   userId,
@@ -214,17 +214,21 @@ function MediaAttachment({
       </Text>
     </View>
   );
-}
+});
 
-export function MessageBubble({
+export const MessageBubble = React.memo(function MessageBubble({
   message,
   isOwn,
   showSender,
   lastCommonRead,
-  onLongPress,
+  onMessageLongPress,
 }: MessageBubbleProps) {
   const theme = useTheme();
   const { serverUrl, userId, appPassword } = useAuthStore();
+
+  const handleLongPress = useCallback(() => {
+    onMessageLongPress?.(message);
+  }, [onMessageLongPress, message]);
 
   if (message.messageType === MessageType.SYSTEM || message.systemMessage) {
     return (
@@ -259,7 +263,7 @@ export function MessageBubble({
       style={[styles.wrapper, isOwn ? styles.wrapperOwn : styles.wrapperOther]}
     >
       <Pressable
-        onLongPress={onLongPress}
+        onLongPress={handleLongPress}
         style={[
           styles.bubble,
           isOwn ? styles.bubbleOwn : styles.bubbleOther,
@@ -348,7 +352,7 @@ export function MessageBubble({
       </Pressable>
     </View>
   );
-}
+});
 
 function parseMessageText(message: Message): string {
   let text = message.message;

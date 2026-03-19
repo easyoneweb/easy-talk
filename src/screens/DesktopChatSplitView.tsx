@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Searchbar, Text, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -134,6 +140,8 @@ function ChatPanel({ token, displayName, userId }: ChatPanelProps) {
   const sendMessage = useSendMessage(token);
   const markAsRead = useMarkAsRead(token);
   const mediaUpload = useMediaUpload(token);
+  const pendingMediaRef = useRef(mediaUpload.pendingMedia);
+  pendingMediaRef.current = mediaUpload.pendingMedia;
 
   const allMessages = useMemo(() => data?.pages.flat() ?? [], [data]);
   const lastKnownMessageId =
@@ -163,7 +171,7 @@ function ChatPanel({ token, displayName, userId }: ChatPanelProps) {
 
   const handleSend = useCallback(
     async (message: string, replyTo?: number) => {
-      if (mediaUpload.pendingMedia) {
+      if (pendingMediaRef.current) {
         const success = await mediaUpload.sendMedia();
         if (success && message) {
           sendMessage.mutate({ message, replyTo });
@@ -172,7 +180,9 @@ function ChatPanel({ token, displayName, userId }: ChatPanelProps) {
         sendMessage.mutate({ message, replyTo });
       }
     },
-    [sendMessage, mediaUpload],
+    // pendingMedia is read via ref; sendMedia is stable (ref-based)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sendMessage, mediaUpload.sendMedia],
   );
 
   const handleMessageLongPress = useCallback((message: Message) => {

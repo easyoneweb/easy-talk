@@ -82,6 +82,8 @@ export function ChatWindowScreen({ route, navigation }: Props) {
   const mediaUpload = useMediaUpload(token);
   const isUploadingRef = useRef(mediaUpload.isUploading);
   isUploadingRef.current = mediaUpload.isUploading;
+  const pendingMediaRef = useRef(mediaUpload.pendingMedia);
+  pendingMediaRef.current = mediaUpload.pendingMedia;
 
   useEffect(() => {
     const unsub = addGifKeyboardListener(
@@ -134,7 +136,7 @@ export function ChatWindowScreen({ route, navigation }: Props) {
 
   const handleSend = useCallback(
     async (message: string, replyTo?: number) => {
-      if (mediaUpload.pendingMedia) {
+      if (pendingMediaRef.current) {
         const success = await mediaUpload.sendMedia();
         // Send text as a separate message if non-empty (Nextcloud file shares
         // create their own system message; captions aren't supported)
@@ -145,7 +147,9 @@ export function ChatWindowScreen({ route, navigation }: Props) {
         sendMessage.mutate({ message, replyTo });
       }
     },
-    [sendMessage, mediaUpload],
+    // pendingMedia is read via ref; sendMedia is stable (ref-based)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sendMessage, mediaUpload.sendMedia],
   );
 
   const handleMessageLongPress = useCallback((message: Message) => {

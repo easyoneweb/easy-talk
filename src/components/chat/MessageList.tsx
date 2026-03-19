@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  Platform,
   StyleSheet,
   View,
   type NativeScrollEvent,
@@ -102,7 +103,7 @@ export function MessageList({
           isOwn={isOwn}
           showSender={isGroupChat}
           lastCommonRead={lastCommonRead}
-          onLongPress={() => onMessageLongPress?.(message)}
+          onMessageLongPress={onMessageLongPress}
         />
       );
     },
@@ -119,6 +120,9 @@ export function MessageList({
           item.type === 'date' ? `date-${item.date}` : `msg-${item.data.id}`
         }
         inverted
+        windowSize={7}
+        maxToRenderPerBatch={5}
+        removeClippedSubviews={Platform.OS !== 'web'}
         onEndReached={hasMoreMessages ? onLoadMore : undefined}
         onEndReachedThreshold={0.5}
         onScroll={handleScroll}

@@ -11,13 +11,28 @@ export function useLongPolling(
 ) {
   const queryClient = useQueryClient();
   const managerRef = useRef<LongPollingManager | null>(null);
+  const lastKnownIdRef = useRef(lastKnownMessageId);
+  const onLastCommonReadUpdateRef = useRef(onLastCommonReadUpdate);
 
+  lastKnownIdRef.current = lastKnownMessageId;
+  onLastCommonReadUpdateRef.current = onLastCommonReadUpdate;
+
+  // Update existing manager when lastKnownMessageId changes (no teardown)
   useEffect(() => {
-    if (!lastKnownMessageId) return;
+    if (lastKnownMessageId && managerRef.current) {
+      managerRef.current.updateLastKnownMessageId(lastKnownMessageId);
+    }
+  }, [lastKnownMessageId]);
+
+  // Create/destroy manager only when token changes or on mount/unmount.
+  // hasId handles the initial undefined→defined transition when messages first load.
+  const hasId = !!lastKnownMessageId;
+  useEffect(() => {
+    if (!hasId) return;
 
     const manager = new LongPollingManager(
       token,
-      lastKnownMessageId,
+      lastKnownIdRef.current!,
       (newMessages: Message[], lastCommonRead: number | null) => {
         queryClient.setQueryData<{
           pages: MessagesResponse[];
@@ -47,7 +62,7 @@ export function useLongPolling(
           };
         });
         if (lastCommonRead !== null) {
-          onLastCommonReadUpdate?.(lastCommonRead);
+          onLastCommonReadUpdateRef.current?.(lastCommonRead);
         }
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
       },
@@ -60,7 +75,7 @@ export function useLongPolling(
       manager.stop();
       managerRef.current = null;
     };
-  }, [token, lastKnownMessageId, queryClient, onLastCommonReadUpdate]);
+  }, [token, hasId, queryClient]);
 
   return managerRef;
 }

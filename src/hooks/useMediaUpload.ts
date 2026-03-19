@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { uploadAndShareFile, type MediaFile } from '@/api/fileSharing';
 import { pickFromGallery, pickFromCamera } from '@/services/mediaPicker';
@@ -10,6 +10,13 @@ export function useMediaUpload(conversationToken: string) {
   const [isUploading, setIsUploading] = useState(false);
   const [isGifLoading, setIsGifLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ref tracks the latest pendingMedia so sendMedia always reads current value
+  const pendingMediaRef = useRef(pendingMedia);
+  pendingMediaRef.current = pendingMedia;
+
+  const conversationTokenRef = useRef(conversationToken);
+  conversationTokenRef.current = conversationToken;
 
   const handlePickFromGallery = useCallback(async () => {
     try {
@@ -53,25 +60,29 @@ export function useMediaUpload(conversationToken: string) {
     setError(null);
   }, []);
 
+  // Stable callback — reads pendingMedia and conversationToken from refs
+  // so it never goes stale regardless of render timing
   const sendMedia = useCallback(async (): Promise<boolean> => {
-    if (!pendingMedia) return false;
+    const media = pendingMediaRef.current;
+    if (!media) return false;
 
     setIsUploading(true);
     setUploadProgress(0);
     setError(null);
 
     try {
-      await uploadAndShareFile(pendingMedia, conversationToken, (progress) =>
-        setUploadProgress(progress),
+      await uploadAndShareFile(
+        media,
+        conversationTokenRef.current,
+        (progress) => setUploadProgress(progress),
       );
 
       setPendingMedia(null);
       setUploadProgress(null);
 
-      // Invalidate queries so the new file message appears
-      queryClient.invalidateQueries({
-        queryKey: ['messages', conversationToken],
-      });
+      // Don't invalidate messages — long polling will deliver the new file
+      // message naturally. Invalidating here causes a refetch that can race
+      // with long polling and overwrite the cache, leading to UI hangs.
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
 
       return true;
@@ -83,7 +94,7 @@ export function useMediaUpload(conversationToken: string) {
     } finally {
       setIsUploading(false);
     }
-  }, [pendingMedia, conversationToken, queryClient]);
+  }, [queryClient]);
 
   return {
     pendingMedia,
