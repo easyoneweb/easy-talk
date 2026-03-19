@@ -357,9 +357,7 @@ export function MessageBubble({
               color={
                 lastCommonRead != null && message.id <= lastCommonRead
                   ? theme.colors.primary
-                  : isOwn
-                    ? theme.colors.onPrimaryContainer
-                    : theme.colors.onSurfaceVariant
+                  : theme.colors.onPrimaryContainer
               }
               style={styles.checkIcon}
             />
@@ -432,6 +430,9 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 16,
     lineHeight: 22,
+    // Explicit system font ensures emoji fallback works on iOS when custom
+    // icon fonts (MaterialCommunityIcons) are registered via the podspec.
+    fontFamily: Platform.OS === 'ios' ? 'System' : undefined,
   },
   time: {},
   checkIcon: {

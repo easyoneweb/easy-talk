@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import {
   useInfiniteQuery,
   useMutation,
@@ -13,7 +13,16 @@ import {
 import { MESSAGES } from '@/config/constants';
 
 export function useMessages(token: string) {
+  const [lastCommonRead, setLastCommonRead] = useState<number | null>(null);
   const lastCommonReadRef = useRef<number | null>(null);
+
+  const updateLastCommonRead = useCallback((id: number) => {
+    const next = Math.max(lastCommonReadRef.current ?? 0, id);
+    if (next !== lastCommonReadRef.current) {
+      lastCommonReadRef.current = next;
+      setLastCommonRead(next);
+    }
+  }, []);
 
   const query = useInfiniteQuery<MessagesResponse>({
     queryKey: ['messages', token],
@@ -24,10 +33,14 @@ export function useMessages(token: string) {
         lastKnownMessageId: pageParam as number | undefined,
       });
       if (result.lastCommonRead !== null) {
-        lastCommonReadRef.current = Math.max(
+        const next = Math.max(
           lastCommonReadRef.current ?? 0,
           result.lastCommonRead,
         );
+        if (next !== lastCommonReadRef.current) {
+          lastCommonReadRef.current = next;
+          setLastCommonRead(next);
+        }
       }
       return result;
     },
@@ -49,10 +62,8 @@ export function useMessages(token: string) {
     fetchNextPage: query.fetchNextPage,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
-    lastCommonRead: lastCommonReadRef.current,
-    updateLastCommonRead: (id: number) => {
-      lastCommonReadRef.current = Math.max(lastCommonReadRef.current ?? 0, id);
-    },
+    lastCommonRead,
+    updateLastCommonRead,
   };
 }
 

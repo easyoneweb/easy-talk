@@ -36,12 +36,12 @@ Cross-platform iOS/Android/Windows/Linux/macOS messenger app built as a Nextclou
 - Platform detection via `src/hooks/usePlatform.ts` (isWeb, isElectron, isMobile)
 - Web icon fonts loaded via `src/utils/loadWebIcons.ts` (MaterialCommunityIcons @font-face injection)
 - Long polling via `LongPollingManager` class with AbortController; returns `X-Chat-Last-Common-Read` header for read receipts
-- Message read status: single checkmark (sent), double checkmark (read by all) — driven by `lastCommonRead` from API headers
+- Message read status: single checkmark (sent), double checkmark (read by all) — driven by `lastCommonRead` state in `useMessages` hook (stored as `useState` backed by a ref to avoid stale closures; updated from API headers and long polling callbacks)
 - Contacts load immediately on mount (empty-query autocomplete), with server-side search for 2+ character queries
 - iOS 26 styling: transparent glass headers (`headerTransparent` + `headerBlurEffect`) on list screens with `useHeaderHeight()` padding; opaque header on ChatWindow to avoid full-screen blur leak
 - iOS floating tab bar: pill-shaped with LiquidGlassView, `marginHorizontal: 60`, `borderRadius: 28`, `overflow: 'hidden'`
 - iOS floating message input: LiquidGlassView glass pill (`borderRadius: 28`) absolutely positioned above the tab bar; `bottom` dynamically adjusts when keyboard opens (from `tabBarHeight + 16` to `keyboardHeight`); MessageList gets extra `contentPaddingBottom` that reduces when keyboard is open
-- iOS message text uses RN native `Text` (not react-native-paper) for proper emoji rendering
+- iOS message text uses RN native `Text` (not react-native-paper) with `fontFamily: 'System'` on iOS to ensure emoji fallback works when MaterialCommunityIcons is registered via the podspec
 - Android message input uses RN native `TextInput` (not react-native-paper) for proper vertical text centering
 - Media attachments in messages: images rendered via Nextcloud preview API (`/index.php/core/preview?fileId=`), GIFs loaded via WebDAV raw file URL (`/remote.php/dav/files/{userId}/{path}`) for animation support; videos show preview thumbnail with play overlay. Media max width capped at 300px on web/desktop, 65% of screen width on mobile
 - Media sending: 2-step Nextcloud flow — (1) upload file to user's `/Talk/` directory via WebDAV PUT, (2) share to conversation via OCS file sharing API (`shareType: 10`). Upload uses `XMLHttpRequest` on mobile (RN's `fetch`/axios can't reliably send Blob PUT bodies) and `fetch` + Blob on web/desktop. HEIC images from iOS are normalized to JPEG (mimeType + extension) for Nextcloud preview compatibility

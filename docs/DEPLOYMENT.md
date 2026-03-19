@@ -649,6 +649,9 @@ Open Android Studio → SDK Manager → uninstall and reinstall the affected Bui
 
 ### iOS
 
+**Emojis render as "?" on iOS 26.x simulator**
+This is a known bug in the iOS 26.x beta simulator runtime — `AppleColorEmoji.ttc` is missing from the simulator's font directory. The issue does not affect real devices. No workaround is needed; test emoji rendering on a physical device.
+
 **"No signing certificate / provisioning profile"**
 - Ensure you have a paid Apple Developer account
 - In Xcode: Preferences → Accounts → add your Apple ID
