@@ -9,7 +9,8 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
     platform === 'web' &&
     (moduleName === '@react-native-community/blur' ||
-      moduleName === '@callstack/liquid-glass')
+      moduleName === '@callstack/liquid-glass' ||
+      moduleName === 'react-native-image-keyboard')
   ) {
     return {
       type: 'empty',

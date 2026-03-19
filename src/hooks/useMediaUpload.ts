@@ -8,6 +8,7 @@ export function useMediaUpload(conversationToken: string) {
   const [pendingMedia, setPendingMedia] = useState<MediaFile | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isGifLoading, setIsGifLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handlePickFromGallery = useCallback(async () => {
@@ -37,6 +38,18 @@ export function useMediaUpload(conversationToken: string) {
   const cancelMedia = useCallback(() => {
     setPendingMedia(null);
     setUploadProgress(null);
+    setIsGifLoading(false);
+    setError(null);
+  }, []);
+
+  const startGifLoading = useCallback(() => {
+    setIsGifLoading(true);
+    setError(null);
+  }, []);
+
+  const setGifMedia = useCallback((media: MediaFile) => {
+    setIsGifLoading(false);
+    setPendingMedia(media);
     setError(null);
   }, []);
 
@@ -76,10 +89,13 @@ export function useMediaUpload(conversationToken: string) {
     pendingMedia,
     uploadProgress,
     isUploading,
+    isGifLoading,
     error,
     pickFromGallery: handlePickFromGallery,
     pickFromCamera: handlePickFromCamera,
     cancelMedia,
+    startGifLoading,
+    setGifMedia,
     sendMedia,
   };
 }

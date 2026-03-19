@@ -136,6 +136,8 @@ This creates:
 
 **Note:** The `expo-image-picker` plugin configures iOS photo library and camera permissions (`NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`) and Android permissions automatically. If you previously ran prebuild without this plugin, run `npm run prebuild:clean` to pick up the new permissions.
 
+**Note:** The `withGifKeyboard` plugin (`plugins/withGifKeyboard.js`) generates four Kotlin source files under `android/app/src/main/java/ru/easyoneweb/easytalk/gifkeyboard/` and patches `MainApplication.kt` to register `GifKeyboardPackage` at index 0. Do not manually edit those generated files — any changes belong in the plugin itself, which re-generates them on every prebuild.
+
 ---
 
 ## Android — Debug Build

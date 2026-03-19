@@ -5,6 +5,7 @@ import {
   Platform,
   TextInput as RNTextInput,
   ActionSheetIOS,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { IconButton, ProgressBar, Text, useTheme } from 'react-native-paper';
@@ -48,6 +49,7 @@ interface MessageInputProps {
   onCancelMedia: () => void;
   uploadProgress: number | null;
   uploadError: string | null;
+  isGifLoading?: boolean;
 }
 
 export function MessageInput({
@@ -61,6 +63,7 @@ export function MessageInput({
   onCancelMedia,
   uploadProgress,
   uploadError,
+  isGifLoading,
 }: MessageInputProps) {
   const theme = useTheme();
   const { isDark } = useAppTheme();
@@ -97,7 +100,8 @@ export function MessageInput({
     }
   };
 
-  const canSend = (text.trim().length > 0 || !!pendingMedia) && !disabled;
+  const canSend =
+    (text.trim().length > 0 || !!pendingMedia) && !disabled && !isGifLoading;
 
   const replyBar = replyingTo ? (
     <View
@@ -125,6 +129,28 @@ export function MessageInput({
         </Text>
       </View>
       <IconButton icon="close" size={16} onPress={onCancelReply} />
+    </View>
+  ) : null;
+
+  const gifLoadingStrip = isGifLoading ? (
+    <View
+      style={[
+        styles.mediaPreview,
+        {
+          backgroundColor:
+            Platform.OS === 'ios'
+              ? 'rgba(118, 118, 128, 0.12)'
+              : theme.colors.surfaceVariant,
+        },
+      ]}
+    >
+      <ActivityIndicator size="small" color={theme.colors.primary} />
+      <Text
+        variant="bodySmall"
+        style={[styles.mediaFileName, { color: theme.colors.onSurfaceVariant }]}
+      >
+        Preparing GIF…
+      </Text>
     </View>
   ) : null;
 
@@ -189,6 +215,7 @@ export function MessageInput({
     const iosInputContent = (
       <>
         {replyBar}
+        {gifLoadingStrip}
         {mediaPreview}
         {errorBar}
         <View style={styles.inputRow}>
@@ -298,6 +325,7 @@ export function MessageInput({
       ]}
     >
       {replyBar}
+      {gifLoadingStrip}
       {mediaPreview}
       {errorBar}
       <View style={styles.inputRow}>

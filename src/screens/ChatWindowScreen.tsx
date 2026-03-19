@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   StyleSheet,
   KeyboardAvoidingView,
@@ -17,6 +23,7 @@ import {
   useMarkAsRead,
 } from '@/hooks/useMessages';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
+import { addGifKeyboardListener } from '@/services/gifKeyboard';
 import { useLongPolling } from '@/hooks/useLongPolling';
 import {
   joinConversation,
@@ -73,6 +80,26 @@ export function ChatWindowScreen({ route, navigation }: Props) {
   const sendMessage = useSendMessage(token);
   const markAsRead = useMarkAsRead(token);
   const mediaUpload = useMediaUpload(token);
+  const isUploadingRef = useRef(mediaUpload.isUploading);
+  isUploadingRef.current = mediaUpload.isUploading;
+
+  useEffect(() => {
+    const unsub = addGifKeyboardListener(
+      () => {
+        if (!isUploadingRef.current) {
+          mediaUpload.startGifLoading();
+        }
+      },
+      (media) => {
+        if (!isUploadingRef.current) {
+          mediaUpload.setGifMedia(media);
+        }
+      },
+    );
+    return unsub;
+    // mediaUpload.startGifLoading and setGifMedia are stable (useCallback with no deps)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const allMessages = useMemo(() => data?.pages.flat() ?? [], [data]);
 
@@ -170,6 +197,7 @@ export function ChatWindowScreen({ route, navigation }: Props) {
             onCancelMedia={mediaUpload.cancelMedia}
             uploadProgress={mediaUpload.uploadProgress}
             uploadError={mediaUpload.error}
+            isGifLoading={mediaUpload.isGifLoading}
           />
         </View>
       ) : (
@@ -189,6 +217,7 @@ export function ChatWindowScreen({ route, navigation }: Props) {
             onCancelMedia={mediaUpload.cancelMedia}
             uploadProgress={mediaUpload.uploadProgress}
             uploadError={mediaUpload.error}
+            isGifLoading={mediaUpload.isGifLoading}
           />
         </View>
       )}

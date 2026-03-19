@@ -35,6 +35,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withGifKeyboard",
       "expo-secure-store",
       "expo-sqlite",
       "expo-web-browser",
